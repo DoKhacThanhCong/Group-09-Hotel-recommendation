@@ -6,7 +6,11 @@ def filter_by_location(df, location_city):
     """
     if not location_city: 
         return df
-    filtered_df = df[df['city'].str.lower() == location_city.lower()]
+
+    location_lower = str(location_city).lower().strip()
+    df_city_normalized = df['city'].str.lower().str.strip()
+    
+    filtered_df = df[df_city_normalized == location_lower]
     return filtered_df
 
 def filter_by_budget(df, max_price):
@@ -16,7 +20,9 @@ def filter_by_budget(df, max_price):
     """
     if max_price <= 0: 
         return df
-    filtered_df = df[df['price'] <= max_price]
+
+    df_price = pd.to_numeric(df['price'], errors='coerce')
+    filtered_df = df[df_price <= max_price]
     return filtered_df
 
 def filter_combined(df, min_stars, preferences):
@@ -42,3 +48,28 @@ def filter_combined(df, min_stars, preferences):
                 print(f"Cảnh báo: Không tìm thấy cột '{key}' để lọc.")
                 
     return filtered_df
+
+def parse_features_from_text(text):
+    """
+    Trích xuất các tính năng từ câu hỏi tự nhiên
+    """
+    text_lower = text.lower()
+    features = {}
+    
+    # Các tính năng khách sạn
+    feature_keywords = {
+        'pool': ['hồ bơi', 'bể bơi', 'pool', 'bơi lội'],
+        'buffet': ['buffet', 'buffet sáng', 'ăn sáng', 'bữa sáng'],
+        'gym': ['gym', 'phòng gym', 'thể hình', 'tập thể dục'],
+        'spa': ['spa', 'massage', 'xông hơi'],
+        'sea': ['biển', 'gần biển', 'view biển', 'bãi biển', 'biển đẹp'],
+        'view': ['view', 'cảnh đẹp', 'tầm nhìn'],
+        'wifi': ['wifi', 'internet'],
+        'parking': ['bãi đỗ', 'đỗ xe', 'parking']
+    }
+    
+    for feature, keywords in feature_keywords.items():
+        if any(keyword in text_lower for keyword in keywords):
+            features[feature] = True
+    
+    return features
