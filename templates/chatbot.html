@@ -147,6 +147,7 @@
             border-radius: 10px;
             padding: 15px;
             margin: 10px 0;
+            animation: fadeIn 0.5s ease;
         }
 
             .hotel-card h4 {
@@ -168,6 +169,33 @@
             .back-button:hover {
                 background: #5a6268;
             }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feature-tags {
+            margin-top: 8px;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -178,12 +206,7 @@
         </div>
 
         <div class="chat-messages" id="chatMessages">
-            <div class="message bot">
-                <div class="message-content">
-                    Xin chào! Tôi có thể giúp bạn tìm khách sạn phù hợp. Bạn muốn tìm ở thành phố nào?
-                    (Hanoi, Da Nang, Ho Chi Minh City, Nha Trang...)
-                </div>
-            </div>
+            <!-- Messages will be loaded here dynamically -->
         </div>
 
         <div class="chat-input-container">
@@ -202,9 +225,16 @@
         const sendButton = document.getElementById('sendButton');
 
         let sessionData = {
-            stage: 'awaiting_city',
+            stage: 'greeting',
             preferences: {}
         };
+
+        // Tự động chào khi trang load
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(() => {
+                addMessage("Xin chào du khách! 👋 Tôi có thể giúp gì cho bạn ạ?");
+            }, 500);
+        });
 
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
@@ -214,8 +244,24 @@
             contentDiv.className = 'message-content';
 
             // Xử lý nội dung có định dạng
-            contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+            let formattedContent = content
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/💡/g, '💡 ')
+                .replace(/🏨/g, '🏨 ')
+                .replace(/💰/g, '💰 ')
+                .replace(/⭐/g, '⭐ ')
+                .replace(/🎯/g, '🎯 ')
+                .replace(/📝/g, '📝 ')
+                .replace(/💬/g, '💬 ')
+                .replace(/🌊/g, '🌊 ')
+                .replace(/🏊/g, '🏊 ')
+                .replace(/🍽️/g, '🍽️ ')
+                .replace(/💪/g, '💪 ')
+                .replace(/💆/g, '💆 ');
 
+            contentDiv.innerHTML = formattedContent;
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -235,6 +281,41 @@
             if (typingIndicator) {
                 typingIndicator.remove();
             }
+        }
+
+        function displayHotelCards(hotels) {
+            hotels.forEach((hotel, index) => {
+                const hotelCard = document.createElement('div');
+                hotelCard.className = 'hotel-card';
+
+                // Tạo tags tính năng
+                const features = [];
+                if (hotel.pool) features.push('🏊 Hồ bơi');
+                if (hotel.buffet) features.push('🍽️ Buffet sáng');
+                if (hotel.gym) features.push('💪 Phòng gym');
+                if (hotel.spa) features.push('💆 Spa');
+                if (hotel.sea) features.push('🌊 Gần biển');
+                if (hotel.view) features.push('🏞️ View đẹp');
+                if (hotel.wifi) features.push('📶 WiFi');
+                if (hotel.parking) features.push('🅿️ Bãi đỗ xe');
+
+                const featuresHTML = features.length > 0 ?
+                    `<div class="feature-tags">${features.map(feature =>
+                        `<span class="feature-tag">${feature}</span>`
+                    ).join('')}</div>` : '';
+
+                hotelCard.innerHTML = `
+                        <h4>${hotel.name} ${'⭐'.repeat(Math.floor(hotel.stars))}</h4>
+                        <p><strong>💰 Giá:</strong> ${typeof hotel.price === 'number' ? hotel.price.toLocaleString() : hotel.price} VND/đêm</p>
+                        <p><strong>⭐ Đánh giá:</strong> ${hotel.rating}/5</p>
+                        ${hotel.recommend_score ? `<p><strong>🎯 Điểm AI:</strong> ${hotel.recommend_score.toFixed(2)}</p>` : ''}
+                        <p><strong>📝 Mô tả:</strong> ${hotel.review ? hotel.review.substring(0, 120) + '...' : 'Không có mô tả'}</p>
+                        ${featuresHTML}
+                    `;
+
+                chatMessages.appendChild(hotelCard);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
         async function sendMessage(message) {
@@ -269,9 +350,17 @@
                         preferences: data.preferences || sessionData.preferences
                     };
 
-                    // Thêm tin nhắn bot
-                    hideTyping();
-                    addMessage(data.response);
+                    // Hiệu ứng delay để tạo cảm giác "đang suy nghĩ"
+                    setTimeout(() => {
+                        hideTyping();
+                        addMessage(data.response);
+
+                        // Hiển thị card khách sạn nếu có
+                        if (data.hotels && data.hotels.length > 0) {
+                            displayHotelCards(data.hotels);
+                        }
+                    }, 1000);
+
                 } else {
                     throw new Error(data.error || 'Có lỗi xảy ra');
                 }
@@ -308,6 +397,16 @@
                 chatForm.dispatchEvent(new Event('submit'));
             }
         });
+
+        // Gợi ý nhanh (tuỳ chọn)
+        const quickSuggestions = [
+            "Tìm khách sạn ở Đà Nẵng giá rẻ",
+            "Khách sạn 5 sao có hồ bơi",
+            "Khách sạn gần biển view đẹp",
+            "Khách sạn có buffet sáng"
+        ];
+
+        // Có thể thêm tính năng gợi ý nhanh sau này nếu cần
     </script>
 </body>
 </html>
