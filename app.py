@@ -3,8 +3,11 @@ import pandas as pd
 import os
 import re
 from datetime import datetime
+from routes.chatbot import init_chatbot_routes
 
 app = Flask(__name__)
+
+init_chatbot_routes(app)
 
 # === FILE PATHS ===
 HOTELS_CSV = "hotels.csv"
