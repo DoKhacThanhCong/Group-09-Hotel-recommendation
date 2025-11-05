@@ -184,14 +184,13 @@ def create_simple_hotel_response(hotels, explanation):
         if features:
             response += f"🎯 {', '.join(features)}\n"
         
-        # THÊM NÚT XEM CHI TIẾT
-        hotel_name_encoded = hotel['name'].replace(' ', '%20')
-        response += f"🔍 [Xem chi tiết {hotel['name']}](/hotel/{hotel_name_encoded})\n"
+        # THÊM NÚT XEM CHI TIẾT (Modal)
+        response += f"🔍 [Xem chi tiết {hotel['name']}](/hotel/{hotel['name'].replace(' ', '%20')})\n"
         
         if i < len(hotels):  # Không thêm dấu cách sau khách sạn cuối
             response += "\n" + "─" * 50 + "\n\n"
     
-    response += "\n**Du khách có muốn tìm kiếm với tiêu chí khác không ạ?**"
+    response += "**Du khách có muốn tìm kiếm với tiêu chí khác không ạ?**"
     return response, True
 
 # Routes cho chatbot
