@@ -184,9 +184,14 @@ def create_simple_hotel_response(hotels, explanation):
         if features:
             response += f"🎯 {', '.join(features)}\n"
         
+        # THÊM NÚT XEM CHI TIẾT
+        hotel_name_encoded = hotel['name'].replace(' ', '%20')
+        response += f"🔍 [Xem chi tiết {hotel['name']}](/hotel/{hotel_name_encoded})\n"
+        
         if i < len(hotels):  # Không thêm dấu cách sau khách sạn cuối
             response += "\n" + "─" * 50 + "\n\n"
     
+    response += "\n**Du khách có muốn tìm kiếm với tiêu chí khác không ạ?**"
     return response, True
 
 # Routes cho chatbot
@@ -211,7 +216,6 @@ def init_chatbot_routes(app):
 
 def process_chat_message(user_message, session_data):
     stage = session_data.get('stage', 'greeting')
-    current_hotels = session_data.get('current_hotels', [])
     
     # Kiểm tra nếu người dùng nói "không" hoặc từ tương tự
     user_message_lower = user_message.lower()
@@ -225,21 +229,6 @@ def process_chat_message(user_message, session_data):
             'hotels': [],
             'has_results': False
         }
-    
-    # Kiểm tra nếu người dùng chọn khách sạn
-    if stage == 'follow_up' and current_hotels:
-        selected_hotel = parse_hotel_selection(user_message, current_hotels)
-        if selected_hotel:
-            response_text = create_hotel_selection_response(selected_hotel)
-            return {
-                'response': response_text,
-                'stage': 'hotel_selected',
-                'preferences': session_data.get('preferences', {}),
-                'hotels': current_hotels,
-                'selected_hotel': selected_hotel,
-                'has_results': True,
-                'show_detail': True
-            }
     
     # LUÔN cố gắng phân tích yêu cầu hỗn hợp trước
     extracted_info = extract_all_preferences_from_text(user_message)
@@ -259,7 +248,6 @@ def process_chat_message(user_message, session_data):
             'stage': 'follow_up',
             'preferences': extracted_info,
             'hotels': hotels,
-            'current_hotels': hotels,  # Lưu hotels hiện tại
             'has_results': has_results
         }
     
@@ -283,7 +271,7 @@ def process_chat_message(user_message, session_data):
     
     elif stage == 'follow_up':
         # Xử lý yêu cầu mới sau khi đã có kết quả
-        if any(word in user_message_lower for word in ['tìm lại', 'khác', 'reset', 'mới']):
+        if any(word in user_message.lower() for word in ['tìm lại', 'khác', 'reset', 'mới']):
             return {
                 'response': "OK! Hãy cho tôi biết bạn muốn tìm khách sạn như thế nào?",
                 'stage': 'awaiting_request',
@@ -301,7 +289,6 @@ def process_chat_message(user_message, session_data):
                     'stage': 'follow_up',
                     'preferences': new_extracted_info,
                     'hotels': hotels,
-                    'current_hotels': hotels,  # Lưu hotels hiện tại
                     'has_results': has_results
                 }
             else:
@@ -317,54 +304,3 @@ def process_chat_message(user_message, session_data):
         'stage': 'awaiting_request',
         'preferences': {}
     }
-
-def parse_hotel_selection(text, current_hotels):
-    """Phân tích người dùng chọn khách sạn nào"""
-    if not current_hotels:
-        return None
-    
-    text_lower = text.lower()
-    
-    # Từ khóa chọn theo số thứ tự
-    selection_keywords = {
-        'đầu tiên': 0, 'thứ nhất': 0, 'số 1': 0, '1': 0, 'first': 0, 'một': 0,
-        'thứ hai': 1, 'số 2': 1, '2': 1, 'second': 1, 'hai': 1,
-        'thứ ba': 2, 'số 3': 2, '3': 2, 'third': 2, 'ba': 2,
-        'cuối cùng': len(current_hotels) - 1, 'cuối': len(current_hotels) - 1
-    }
-    
-    # Kiểm tra theo số thứ tự
-    for keyword, index in selection_keywords.items():
-        if keyword in text_lower and index < len(current_hotels):
-            return current_hotels[index]
-    
-    # Kiểm tra theo tên khách sạn
-    for hotel in current_hotels:
-        hotel_name_lower = hotel['name'].lower()
-        if hotel_name_lower in text_lower:
-            return hotel
-    
-    return None
-
-def create_hotel_selection_response(selected_hotel):
-    """Tạo response khi người dùng chọn khách sạn"""
-    response = f"🎉 **Bạn đã chọn {selected_hotel['name']}**\n\n"
-    response += f"**{selected_hotel['name']}**\n"
-    response += f"⭐ {selected_hotel['stars']} sao | 💰 {selected_hotel['price']:,} VND/đêm\n"
-    response += f"📍 {selected_hotel['city']} | ⭐ {selected_hotel['rating']}/5\n"
-    
-    # Thêm biểu tượng tính năng
-    features = []
-    if selected_hotel.get('pool'): features.append("🏊 Hồ bơi")
-    if selected_hotel.get('buffet'): features.append("🍽️ Buffet sáng") 
-    if selected_hotel.get('gym'): features.append("💪 Gym")
-    if selected_hotel.get('spa'): features.append("💆 Spa")
-    if selected_hotel.get('sea'): features.append("🌊 View biển")
-    if selected_hotel.get('view'): features.append("🏞️ View đẹp")
-    
-    if features:
-        response += f"🎯 {', '.join(features)}\n\n"
-    
-    response += "📖 **Xem chi tiết khách sạn:** /hotel/" + selected_hotel['name'].replace(' ', '%20')
-    
-    return response
