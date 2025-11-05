@@ -185,9 +185,8 @@ def create_simple_hotel_response(hotels, explanation):
             response += f"🎯 {', '.join(features)}\n"
         
         if i < len(hotels):  # Không thêm dấu cách sau khách sạn cuối
-            response += "\n" + "─" * 40 + "\n\n"
+            response += "\n" + "─" * 50 + "\n\n"
     
-    response += "\n**Du khách có muốn tìm kiếm với tiêu chí khác không ạ?**"
     return response, True
 
 # Routes cho chatbot
@@ -213,6 +212,19 @@ def init_chatbot_routes(app):
 def process_chat_message(user_message, session_data):
     stage = session_data.get('stage', 'greeting')
     
+    # Kiểm tra nếu người dùng nói "không" hoặc từ tương tự
+    user_message_lower = user_message.lower()
+    negative_keywords = ['không', 'ko', 'thôi', 'khong', 'k cần', 'không cần', 'đủ rồi', 'enough', 'no']
+    
+    if any(keyword in user_message_lower for keyword in negative_keywords) and stage == 'follow_up':
+        return {
+            'response': "Cảm ơn du khách đã sử dụng dịch vụ của chúng tôi! 😊✨\nNếu có nhu cầu đặt phòng hoặc tư vấn thêm, hãy quay lại nhé!",
+            'stage': 'end',
+            'preferences': {},
+            'hotels': [],
+            'has_results': False
+        }
+    
     # LUÔN cố gắng phân tích yêu cầu hỗn hợp trước
     extracted_info = extract_all_preferences_from_text(user_message)
     
@@ -221,6 +233,10 @@ def process_chat_message(user_message, session_data):
         # Tìm khách sạn ngay lập tức
         hotels, explanation = generate_hotel_recommendations(extracted_info, base_data)
         response_text, has_results = create_simple_hotel_response(hotels, explanation)
+        
+        # Thêm câu hỏi follow-up nếu có kết quả
+        if has_results:
+            response_text += "\n\n**Du khách có muốn tìm kiếm với tiêu chí khác không ạ?**"
         
         return {
             'response': response_text,
