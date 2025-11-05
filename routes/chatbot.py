@@ -132,7 +132,7 @@ def has_sufficient_info(preferences):
     return criteria_count >= 1  # Chỉ cần 1 tiêu chí là đủ
 
 def generate_hotel_recommendations(user_prefs, base_data):
-    """Tạo danh sách khách sạn đề xuất"""
+    """Tạo danh sách khách sạn đề xuất - SỬA ĐỂ TRẢ VỀ 3 KHÁCH SẠN"""
     if base_data is None or base_data.empty:
         return [], "Không có dữ liệu khách sạn."
 
@@ -152,10 +152,14 @@ def generate_hotel_recommendations(user_prefs, base_data):
     if features:
         filtered_data = filter_combined(filtered_data, user_prefs.get('min_stars', 0), features)
     
-    # Tính điểm AI và lấy top 3
+    # Tính điểm AI và lấy top 3 - QUAN TRỌNG: ĐẢM BẢO LẤY 3 KHÁCH SẠN
     if not filtered_data.empty:
         final_results, explanation = calculate_scores_and_explain(filtered_data, user_prefs)
-        top_hotels = final_results.head(3).to_dict('records')
+        
+        # Lấy số lượng khách sạn tối đa có thể (tối đa 3)
+        num_hotels = min(3, len(final_results))
+        top_hotels = final_results.head(num_hotels).to_dict('records')
+        
         return top_hotels, explanation
     else:
         return [], "Không tìm thấy khách sạn phù hợp."
@@ -243,6 +247,7 @@ def process_chat_message(user_message, session_data):
             'stage': 'follow_up',
             'preferences': extracted_info,
             'hotels': hotels,
+            'currentHotels': hotels,  # THÊM DÒNG NÀY
             'has_results': has_results
         }
     
@@ -266,7 +271,7 @@ def process_chat_message(user_message, session_data):
     
     elif stage == 'follow_up':
         # Xử lý yêu cầu mới sau khi đã có kết quả
-        if any(word in user_message.lower() for word in ['tìm lại', 'khác', 'reset', 'mới']):
+        if any(word in user_message_lower for word in ['tìm lại', 'khác', 'reset', 'mới']):
             return {
                 'response': "OK! Hãy cho tôi biết bạn muốn tìm khách sạn như thế nào?",
                 'stage': 'awaiting_request',
@@ -284,6 +289,7 @@ def process_chat_message(user_message, session_data):
                     'stage': 'follow_up',
                     'preferences': new_extracted_info,
                     'hotels': hotels,
+                    'currentHotels': hotels,  # THÊM DÒNG NÀY
                     'has_results': has_results
                 }
             else:
