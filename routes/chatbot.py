@@ -14,16 +14,35 @@ def load_data():
 
 base_data = load_data()
 
-# Hàm parse thông tin cải tiến cho yêu cầu hỗn hợp
 def parse_flexible_budget(text):
     """Parse ngân sách linh hoạt từ câu hỏi hỗn hợp"""
     text_lower = text.lower()
     
-    # Giá cụ thể
-    if "dưới" in text_lower or "dưới" in text_lower:
-        numbers = re.findall(r'\d+', text_lower)
-        if numbers:
-            return int(numbers[0])
+    # Tìm số tiền sau từ "dưới", "dưới", "khoảng", "tầm"
+    budget_patterns = [
+        r'dưới\s*(\d+\s*[kK]?\s*[đd]?[ồô]ng?)',
+        r'dưới\s*(\d+\s*[kK]?\s*[đd]?[ồô]ng?)', 
+        r'khoảng\s*(\d+\s*[kK]?\s*[đd]?[ồô]ng?)',
+        r'tầm\s*(\d+\s*[kK]?\s*[đd]?[ồô]ng?)',
+        r'giá\s*(\d+\s*[kK]?\s*[đd]?[ồô]ng?)',
+        r'(\d+\s*[kK]?\s*[tr]?[iệI]?[uu]?[ee]?[uu]?)\s*[đd]?[ồô]?ng?'
+    ]
+    
+    for pattern in budget_patterns:
+        matches = re.findall(pattern, text_lower)
+        if matches:
+            number_str = matches[0].replace('k', '000').replace('K', '000').replace('tr', '000000').replace('triệu', '000000')
+            numbers = re.findall(r'\d+', number_str)
+            if numbers:
+                budget = int(numbers[0])
+                # Xử lý đơn vị
+                if 'triệu' in matches[0] or 'tr' in matches[0]:
+                    return budget * 1000000
+                elif 'k' in matches[0] or 'K' in matches[0]:
+                    return budget * 1000
+                else:
+                    # Nếu số lớn hơn 1000, coi như VND, nhỏ hơn coi như triệu
+                    return budget * 1000000 if budget < 1000 else budget
     
     # Mức giá tổng quát
     if any(word in text_lower for word in ["rẻ", "giá thấp", "tiết kiệm", "bình dân"]):
@@ -33,9 +52,7 @@ def parse_flexible_budget(text):
     elif any(word in text_lower for word in ["cao cấp", "sang", "đắt"]):
         return 8000000
     
-    # Parse số trực tiếp
-    numbers = re.findall(r'\d+', text.replace(',', '').replace('.', ''))
-    return int(numbers[0]) if numbers else None
+    return None
 
 def parse_flexible_stars(text):
     """Parse số sao linh hoạt từ câu hỏi hỗn hợp"""
@@ -46,7 +63,7 @@ def parse_flexible_stars(text):
     
     # Tìm số sao cụ thể trong câu
     for i in range(5, 0, -1):
-        if f"{i} sao" in text_lower or f"{i} sao" in text_lower.replace('*', ''):
+        if f"{i} sao" in text_lower or f"{i}-sao" in text_lower or f"{i} sao" in text_lower.replace('*', ''):
             return i
     
     numbers = re.findall(r'[1-5]', text)
@@ -56,16 +73,16 @@ def parse_city(text):
     """Parse thành phố từ câu hỏi hỗn hợp"""
     text_lower = text.lower()
     city_mapping = {
-        "hanoi": "Hanoi", "hà nội": "Hanoi", "hn": "Hanoi", "thủ đô": "Hanoi",
-        "da nang": "Da Nang", "đà nẵng": "Da Nang", "dn": "Da Nang",
+        "hanoi": "Hanoi", "hà nội": "Hanoi", "hn": "Hanoi", "thủ đô": "Hanoi", "ha noi": "Hanoi",
+        "da nang": "Da Nang", "đà nẵng": "Da Nang", "dn": "Da Nang", "da nang": "Da Nang",
         "ho chi minh": "Ho Chi Minh City", "sài gòn": "Ho Chi Minh City", 
-        "saigon": "Ho Chi Minh City", "hcm": "Ho Chi Minh City", "tp hcm": "Ho Chi Minh City",
-        "nha trang": "Nha Trang", "nt": "Nha Trang",
-        "đà lạt": "Da Lat", "dalat": "Da Lat",
+        "saigon": "Ho Chi Minh City", "hcm": "Ho Chi Minh City", "tp hcm": "Ho Chi Minh City", "tphcm": "Ho Chi Minh City",
+        "nha trang": "Nha Trang", "nt": "Nha Trang", "nha trang": "Nha Trang",
+        "đà lạt": "Da Lat", "dalat": "Da Lat", "da lat": "Da Lat",
         "phú quốc": "Phu Quoc", "phu quoc": "Phu Quoc",
         "hội an": "Hoi An", "hoi an": "Hoi An",
         "vũng tàu": "Vung Tau", "vung tau": "Vung Tau",
-        "quy nhơn": "Quy Nhon", "quy nhon": "Quy Nhon"
+        "quy nhơn": "Quy Nhon", "quy nhon": "Quy Nhon", "quy nhon": "Quy Nhon"
     }
     
     for keyword, city in city_mapping.items():
@@ -74,8 +91,17 @@ def parse_city(text):
     return None
 
 def extract_all_preferences_from_text(text):
-    """Trích xuất TẤT CẢ thông tin từ câu hỏi hỗn hợp"""
+    """Trích xuất TẤT CẢ thông tin từ câu hỏi hỗn hợp - CẢI TIẾN"""
     text_lower = text.lower()
+    
+    # Kiểm tra xem có phải là yêu cầu tìm khách sạn không
+    hotel_keywords = ['khách sạn', 'hotel', 'ks', 'đặt phòng', 'tìm', 'tìm kiếm']
+    is_hotel_request = any(keyword in text_lower for keyword in hotel_keywords) or any([
+        parse_city(text), parse_flexible_budget(text), parse_flexible_stars(text), parse_features_from_text(text)
+    ])
+    
+    if not is_hotel_request:
+        return None
     
     preferences = {
         'city': parse_city(text),
@@ -87,33 +113,29 @@ def extract_all_preferences_from_text(text):
     
     return preferences
 
-def get_remaining_features(used_features):
-    """Lấy danh sách tính năng CHƯA được đề cập để gợi ý"""
-    all_features = {
-        'pool': 'hồ bơi',
-        'buffet': 'buffet sáng', 
-        'gym': 'phòng gym',
-        'spa': 'spa/massage',
-        'sea': 'view biển',
-        'view': 'view đẹp',
-        'wifi': 'wifi tốt',
-        'parking': 'bãi đỗ xe',
-        'breakfast': 'bữa sáng',
-        'restaurant': 'nhà hàng'
-    }
+def has_sufficient_info(preferences):
+    """Kiểm tra có đủ thông tin để tìm khách sạn không"""
+    if not preferences:
+        return False
+        
+    # Chỉ cần 1 trong các tiêu chí là đủ
+    criteria_count = 0
+    if preferences.get('city'):
+        criteria_count += 1
+    if preferences.get('budget'):
+        criteria_count += 1  
+    if preferences.get('min_stars', 0) > 0:
+        criteria_count += 1
+    if preferences.get('features'):
+        criteria_count += len(preferences['features'])
     
-    remaining = []
-    for feature, vietnamese in all_features.items():
-        if feature not in used_features:
-            remaining.append(vietnamese)
-    
-    return remaining
+    return criteria_count >= 1  # Chỉ cần 1 tiêu chí là đủ
 
 def generate_hotel_recommendations(user_prefs, base_data):
-    """Tạo danh sách khách sạn đề xuất với xử lý hỗn hợp"""
+    """Tạo danh sách khách sạn đề xuất"""
     if base_data is None or base_data.empty:
-        return [], "Xin lỗi, hiện không có dữ liệu khách sạn."
-    
+        return [], "Không có dữ liệu khách sạn."
+
     # Lọc dữ liệu
     filtered_data = base_data.copy()
     
@@ -130,49 +152,41 @@ def generate_hotel_recommendations(user_prefs, base_data):
     if features:
         filtered_data = filter_combined(filtered_data, user_prefs.get('min_stars', 0), features)
     
-    # Tính điểm AI
+    # Tính điểm AI và lấy top 3
     if not filtered_data.empty:
         final_results, explanation = calculate_scores_and_explain(filtered_data, user_prefs)
         top_hotels = final_results.head(3).to_dict('records')
         return top_hotels, explanation
     else:
-        return [], "Không tìm thấy khách sạn nào phù hợp với yêu cầu của bạn."
+        return [], "Không tìm thấy khách sạn phù hợp."
 
-def create_hotel_response(hotels, explanation, used_features=None):
-    """Tạo câu trả lời về khách sạn với gợi ý tiếp theo"""
+def create_simple_hotel_response(hotels, explanation):
+    """Tạo câu trả lời đơn giản với khung khách sạn đồng đều - KHÔNG mô tả, KHÔNG điểm AI"""
     if not hotels:
-        return "Xin lỗi, tôi không tìm thấy khách sạn nào phù hợp với yêu cầu của bạn.", []
+        return "Xin lỗi, không tìm thấy khách sạn nào phù hợp với yêu cầu của bạn.", False
     
-    response = f"💡 **Phân tích:** {explanation}\n\n"
-    response += "🏨 **TOP KHÁCH SẠN PHÙ HỢP:**\n\n"
+    response = "🏨 **Tôi tìm thấy các khách sạn phù hợp:**\n\n"
     
     for i, hotel in enumerate(hotels, 1):
-        response += f"**{i}. {hotel['name']}** ({hotel['stars']} ⭐)\n"
-        response += f"   - 💰 **Giá:** {hotel['price']:,} VND/đêm\n"
-        response += f"   - ⭐ **Đánh giá:** {hotel['rating']}/5\n"
+        response += f"**{i}. {hotel['name']}**\n"
+        response += f"   ⭐ {hotel['stars']} sao | 💰 {hotel['price']:,} VND\n"
+        response += f"   📍 {hotel['city']} | ⭐ {hotel['rating']}/5\n"
         
-        # Thêm thông tin tính năng
+        # Thêm biểu tượng tính năng ngắn gọn
         features = []
-        if hotel.get('pool'): features.append("🏊 Hồ bơi")
-        if hotel.get('buffet'): features.append("🍽️ Buffet sáng")
-        if hotel.get('gym'): features.append("💪 Gym")
-        if hotel.get('spa'): features.append("💆 Spa")
-        if hotel.get('sea'): features.append("🌊 Gần biển")
+        if hotel.get('pool'): features.append("🏊")
+        if hotel.get('buffet'): features.append("🍽️") 
+        if hotel.get('gym'): features.append("💪")
+        if hotel.get('spa'): features.append("💆")
+        if hotel.get('sea'): features.append("🌊")
         
         if features:
-            response += f"   - 🎯 **Tiện ích:** {', '.join(features)}\n"
+            response += f"   🎯 {''.join(features)}\n"
         
-        response += f"   - 📝 **Mô tả:** {hotel.get('review', '')[:100]}...\n\n"
+        response += "\n"  # Khoảng cách giữa các khách sạn
     
-    # Tạo câu hỏi tiếp theo với tính năng chưa dùng
-    remaining_features = get_remaining_features(used_features or [])
-    if remaining_features:
-        follow_up = f"💬 **Du khách có muốn thêm yêu cầu gì không ạ?** (ví dụ: {', '.join(remaining_features[:4])}...)"
-    else:
-        follow_up = "💬 **Bạn có yêu cầu gì khác không ạ?**"
-    
-    response += follow_up
-    return response, remaining_features
+    response += "💬 **Bạn có muốn tìm kiếm với tiêu chí khác không?**"
+    return response, True
 
 # Routes cho chatbot
 def init_chatbot_routes(app):
@@ -196,139 +210,74 @@ def init_chatbot_routes(app):
 
 def process_chat_message(user_message, session_data):
     stage = session_data.get('stage', 'greeting')
-    user_prefs = session_data.get('preferences', {})
-    used_features = session_data.get('used_features', [])
     
-    # Xử lý theo stage
-    if stage == 'greeting':
-        return {
-            'response': "Xin chào du khách! 👋 Tôi có thể giúp gì cho bạn ạ?",
-            'stage': 'awaiting_request',
-            'preferences': user_prefs,
-            'used_features': used_features
-        }
+    # LUÔN cố gắng phân tích yêu cầu hỗn hợp trước
+    extracted_info = extract_all_preferences_from_text(user_message)
     
-    elif stage == 'awaiting_request':
-        # Phân tích yêu cầu HỖN HỢP
-        extracted_info = extract_all_preferences_from_text(user_message)
-        
-        # Cập nhật used_features
-        new_features = list(extracted_info.get('features', {}).keys())
-        used_features.extend(new_features)
-        used_features = list(set(used_features))  # Remove duplicates
-        
-        # Cập nhật preferences
-        user_prefs.update(extracted_info)
-        
-        # Nếu có đủ thông tin để tìm kiếm (có thành phố hoặc đủ tiêu chí)
-        if user_prefs.get('city') or (user_prefs.get('features') and len(user_prefs.get('features', {})) >= 2):
-            # Tìm khách sạn ngay
-            hotels, explanation = generate_hotel_recommendations(user_prefs, base_data)
-            response_text, remaining_features = create_hotel_response(hotels, explanation, used_features)
-            
-            return {
-                'response': response_text,
-                'stage': 'follow_up',
-                'preferences': user_prefs,
-                'used_features': used_features,
-                'hotels': hotels
-            }
-        else:
-            # Hỏi thêm thông tin cơ bản
-            if not user_prefs.get('city'):
-                return {
-                    'response': "Bạn muốn tìm khách sạn ở thành phố nào ạ? (Hà Nội, Đà Nẵng, Hồ Chí Minh, Nha Trang, Đà Lạt...)",
-                    'stage': 'awaiting_city',
-                    'preferences': user_prefs,
-                    'used_features': used_features
-                }
-            else:
-                # Đã có thành phố, hỏi thêm chi tiết
-                return {
-                    'response': f"Tuyệt vời! {user_prefs['city']} có nhiều lựa chọn hay. Bạn có yêu cầu gì cụ thể không ạ? (ví dụ: giá cả, số sao, hồ bơi, buffet sáng...)",
-                    'stage': 'awaiting_details',
-                    'preferences': user_prefs,
-                    'used_features': used_features
-                }
-    
-    elif stage == 'awaiting_city':
-        city = parse_city(user_message)
-        if city:
-            user_prefs['city'] = city
-            
-            # Tìm khách sạn ngay với thành phố + bất kỳ thông tin nào đã có
-            hotels, explanation = generate_hotel_recommendations(user_prefs, base_data)
-            response_text, remaining_features = create_hotel_response(hotels, explanation, used_features)
-            
-            return {
-                'response': response_text,
-                'stage': 'follow_up',
-                'preferences': user_prefs,
-                'used_features': used_features,
-                'hotels': hotels
-            }
-        else:
-            return {
-                'response': "Tôi chưa nhận diện được thành phố. Bạn vui lòng cho biết thành phố cụ thể nhé!",
-                'stage': 'awaiting_city',
-                'preferences': user_prefs,
-                'used_features': used_features
-            }
-    
-    elif stage == 'awaiting_details':
-        # Phân tích thông tin chi tiết từ câu hỏi hỗn hợp
-        extracted_info = extract_all_preferences_from_text(user_message)
-        new_features = list(extracted_info.get('features', {}).keys())
-        used_features.extend(new_features)
-        used_features = list(set(used_features))
-        
-        user_prefs.update(extracted_info)
-        
-        # Tìm khách sạn ngay
-        hotels, explanation = generate_hotel_recommendations(user_prefs, base_data)
-        response_text, remaining_features = create_hotel_response(hotels, explanation, used_features)
+    # Nếu phân tích được thông tin từ yêu cầu hỗn hợp
+    if extracted_info and has_sufficient_info(extracted_info):
+        # Tìm khách sạn ngay lập tức
+        hotels, explanation = generate_hotel_recommendations(extracted_info, base_data)
+        response_text, has_results = create_simple_hotel_response(hotels, explanation)
         
         return {
             'response': response_text,
             'stage': 'follow_up',
-            'preferences': user_prefs,
-            'used_features': used_features,
-            'hotels': hotels
+            'preferences': extracted_info,
+            'hotels': hotels,
+            'has_results': has_results
+        }
+    
+    # Nếu không phân tích được, xử lý theo stage thông thường
+    user_prefs = session_data.get('preferences', {})
+    
+    if stage == 'greeting':
+        return {
+            'response': "Xin chào du khách! 👋 Hãy cho tôi biết bạn muốn tìm khách sạn như thế nào? (ví dụ: 'Khách sạn ở Đà Nẵng có hồ bơi', 'Phòng giá rẻ ở Hà Nội', 'Khách sạn 5 sao có buffet')",
+            'stage': 'awaiting_request', 
+            'preferences': user_prefs
+        }
+    
+    elif stage == 'awaiting_request':
+        # Nếu đến đây mà không phân tích được, hỏi rõ hơn
+        return {
+            'response': "Bạn có thể nói rõ hơn về yêu cầu được không? Ví dụ:\n• 'Khách sạn ở Hà Nội có hồ bơi'\n• 'Phòng giá dưới 2 triệu' \n• 'Khách sạn 4 sao ở Đà Nẵng'",
+            'stage': 'awaiting_request',
+            'preferences': user_prefs
         }
     
     elif stage == 'follow_up':
-        # Xử lý câu hỏi tiếp theo
+        # Xử lý yêu cầu mới sau khi đã có kết quả
         if any(word in user_message.lower() for word in ['tìm lại', 'khác', 'reset', 'mới']):
             return {
-                'response': "OK! Hãy cho tôi biết bạn muốn tìm khách sạn ở đâu?",
-                'stage': 'awaiting_city',
-                'preferences': {},
-                'used_features': []
+                'response': "OK! Hãy cho tôi biết bạn muốn tìm khách sạn như thế nào?",
+                'stage': 'awaiting_request',
+                'preferences': {}
             }
         else:
-            # Phân tích yêu cầu mới và cập nhật
-            extracted_info = extract_all_preferences_from_text(user_message)
-            new_features = list(extracted_info.get('features', {}).keys())
-            used_features.extend(new_features)
-            used_features = list(set(used_features))
-            
-            user_prefs.update(extracted_info)
-            
-            hotels, explanation = generate_hotel_recommendations(user_prefs, base_data)
-            response_text, remaining_features = create_hotel_response(hotels, explanation, used_features)
-            
-            return {
-                'response': response_text,
-                'stage': 'follow_up',
-                'preferences': user_prefs,
-                'used_features': used_features,
-                'hotels': hotels
-            }
+            # Thử phân tích yêu cầu mới
+            new_extracted_info = extract_all_preferences_from_text(user_message)
+            if new_extracted_info and has_sufficient_info(new_extracted_info):
+                hotels, explanation = generate_hotel_recommendations(new_extracted_info, base_data)
+                response_text, has_results = create_simple_hotel_response(hotels, explanation)
+                
+                return {
+                    'response': response_text,
+                    'stage': 'follow_up',
+                    'preferences': new_extracted_info,
+                    'hotels': hotels,
+                    'has_results': has_results
+                }
+            else:
+                return {
+                    'response': "Bạn muốn tìm kiếm với tiêu chí gì khác? (ví dụ: thêm hồ bơi, đổi thành phố, giá cả khác...)",
+                    'stage': 'follow_up',
+                    'preferences': user_prefs
+                }
     
     # Mặc định
     return {
-        'response': "Xin chào! Tôi có thể giúp bạn tìm khách sạn phù hợp. Bạn muốn tìm ở thành phố nào?",
-        'stage': 'awaiting_city',
-        'preferences': {},
-        'used_features': []
+        'response': "Hãy cho tôi biết bạn muốn tìm khách sạn như thế nào? (ví dụ: 'Khách sạn ở Đà Nẵng', 'Phòng có hồ bơi', 'Giá dưới 3 triệu')",
+        'stage': 'awaiting_request',
+        'preferences': {}
     }
