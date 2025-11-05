@@ -50,22 +50,22 @@ def filter_combined(df, min_stars, preferences):
     return filtered_df
 
 def parse_features_from_text(text):
-    """
-    Trích xuất các tính năng từ câu hỏi tự nhiên
-    """
+    """Trích xuất các tính năng từ câu hỏi tự nhiên - MỞ RỘNG"""
     text_lower = text.lower()
     features = {}
     
-    # Các tính năng khách sạn
+    # Các tính năng khách sạn - MỞ RỘNG THÊM
     feature_keywords = {
-        'pool': ['hồ bơi', 'bể bơi', 'pool', 'bơi lội'],
-        'buffet': ['buffet', 'buffet sáng', 'ăn sáng', 'bữa sáng'],
-        'gym': ['gym', 'phòng gym', 'thể hình', 'tập thể dục'],
-        'spa': ['spa', 'massage', 'xông hơi'],
-        'sea': ['biển', 'gần biển', 'view biển', 'bãi biển', 'biển đẹp'],
-        'view': ['view', 'cảnh đẹp', 'tầm nhìn'],
-        'wifi': ['wifi', 'internet'],
-        'parking': ['bãi đỗ', 'đỗ xe', 'parking']
+        'pool': ['hồ bơi', 'bể bơi', 'pool', 'bơi lội', 'swimming'],
+        'buffet': ['buffet', 'buffet sáng', 'ăn sáng', 'bữa sáng', 'breakfast'],
+        'gym': ['gym', 'phòng gym', 'thể hình', 'tập thể dục', 'fitness'],
+        'spa': ['spa', 'massage', 'xông hơi', 'thư giãn'],
+        'sea': ['biển', 'gần biển', 'view biển', 'bãi biển', 'biển đẹp', 'sea', 'beach'],
+        'view': ['view', 'cảnh đẹp', 'tầm nhìn', 'view thành phố', 'city view'],
+        'wifi': ['wifi', 'internet', 'mạng'],
+        'parking': ['bãi đỗ', 'đỗ xe', 'parking', 'garage'],
+        'breakfast': ['bữa sáng', 'ăn sáng', 'breakfast included'],
+        'restaurant': ['nhà hàng', 'restaurant', 'quán ăn']
     }
     
     for feature, keywords in feature_keywords.items():
