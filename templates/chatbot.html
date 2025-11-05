@@ -166,24 +166,22 @@
                 box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
             }
 
-        .detail-button {
+        .detail-link {
+            display: inline-block;
             background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
             color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: all 0.3s ease;
+            padding: 6px 12px;
+            border-radius: 15px;
             text-decoration: none;
-            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 5px;
+            transition: all 0.3s ease;
         }
 
-            .detail-button:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+            .detail-link:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(0, 184, 148, 0.3);
             }
     </style>
 </head>
@@ -221,8 +219,7 @@
 
         let sessionData = {
             stage: 'greeting',
-            preferences: {},
-            currentHotels: []
+            preferences: {}
         };
 
         // Tự động chào khi trang load
@@ -239,7 +236,7 @@
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
 
-            // Xử lý nội dung có định dạng và thêm nút xem chi tiết
+            // Xử lý nội dung có định dạng và chuyển đổi link
             let formattedContent = content
                 .replace(/\n/g, '<br>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -256,14 +253,13 @@
                 .replace(/🍽️/g, '🍽️ ')
                 .replace(/💪/g, '💪 ')
                 .replace(/💆/g, '💆 ')
-                .replace(/🎉/g, '🎉 ');
+                .replace(/🔍/g, '🔍 ');
 
-            // Thêm nút xem chi tiết nếu có link
-            if (content.includes('/hotel/')) {
-                const hotelName = content.split('/hotel/')[1].split(' ')[0];
-                const decodedHotelName = decodeURIComponent(hotelName);
-                formattedContent += `<br><br><a href="/hotel/${hotelName}" class="detail-button" target="_blank">📖 Xem chi tiết ${decodedHotelName}</a>`;
-            }
+            // Xử lý các link xem chi tiết
+            formattedContent = formattedContent.replace(
+                /\[Xem chi tiết (.*?)\]\(\/hotel\/(.*?)\)/g,
+                '<a href="/hotel/$2" class="detail-link" target="_blank">🔍 Xem chi tiết $1</a>'
+            );
 
             contentDiv.innerHTML = formattedContent;
             messageDiv.appendChild(contentDiv);
@@ -316,8 +312,7 @@
                     // Cập nhật session data
                     sessionData = {
                         stage: data.stage || sessionData.stage,
-                        preferences: data.preferences || sessionData.preferences,
-                        currentHotels: data.hotels || data.currentHotels || sessionData.currentHotels
+                        preferences: data.preferences || sessionData.preferences
                     };
 
                     // Hiệu ứng delay để tạo cảm giác "đang suy nghĩ"
