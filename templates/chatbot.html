@@ -16,15 +16,19 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .chat-container {
             max-width: 800px;
-            margin: 0 auto;
+            width: 100%;
             background: white;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             overflow: hidden;
+            margin-bottom: 20px;
         }
 
         .chat-header {
@@ -141,61 +145,46 @@
             color: #666;
         }
 
-        .hotel-card {
-            background: white;
-            border: 1px solid #e1e5e9;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 10px 0;
-            animation: fadeIn 0.5s ease;
-        }
-
-            .hotel-card h4 {
-                color: #667eea;
-                margin-bottom: 8px;
-            }
-
-        .back-button {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 8px 16px;
-            background: #6c757d;
+        .back-home-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
             text-decoration: none;
-            border-radius: 5px;
-            font-size: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
-            .back-button:hover {
-                background: #5a6268;
+            .back-home-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
             }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .feature-tags {
-            margin-top: 8px;
-        }
-
-        .feature-tag {
+        .detail-button {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            text-decoration: none;
             display: inline-block;
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            margin-right: 5px;
-            margin-bottom: 5px;
         }
+
+            .detail-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+            }
     </style>
 </head>
 <body>
@@ -218,6 +207,12 @@
         </div>
     </div>
 
+    <!-- Nút quay lại trang chủ -->
+    <a href="/" class="back-home-button">
+        <span>←</span>
+        Quay lại trang chủ
+    </a>
+
     <script>
         const chatMessages = document.getElementById('chatMessages');
         const chatForm = document.getElementById('chatForm');
@@ -226,7 +221,8 @@
 
         let sessionData = {
             stage: 'greeting',
-            preferences: {}
+            preferences: {},
+            currentHotels: []
         };
 
         // Tự động chào khi trang load
@@ -243,7 +239,7 @@
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
 
-            // Xử lý nội dung có định dạng
+            // Xử lý nội dung có định dạng và thêm nút xem chi tiết
             let formattedContent = content
                 .replace(/\n/g, '<br>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -259,7 +255,15 @@
                 .replace(/🏊/g, '🏊 ')
                 .replace(/🍽️/g, '🍽️ ')
                 .replace(/💪/g, '💪 ')
-                .replace(/💆/g, '💆 ');
+                .replace(/💆/g, '💆 ')
+                .replace(/🎉/g, '🎉 ');
+
+            // Thêm nút xem chi tiết nếu có link
+            if (content.includes('/hotel/')) {
+                const hotelName = content.split('/hotel/')[1].split(' ')[0];
+                const decodedHotelName = decodeURIComponent(hotelName);
+                formattedContent += `<br><br><a href="/hotel/${hotelName}" class="detail-button" target="_blank">📖 Xem chi tiết ${decodedHotelName}</a>`;
+            }
 
             contentDiv.innerHTML = formattedContent;
             messageDiv.appendChild(contentDiv);
@@ -283,69 +287,59 @@
             }
         }
 
-    // Trong hàm sendMessage, cập nhật phần hiển thị kết quả
-    async function sendMessage(message) {
-        // Thêm tin nhắn user
-        addMessage(message, true);
+        async function sendMessage(message) {
+            // Thêm tin nhắn user
+            addMessage(message, true);
 
-        // Hiển thị typing indicator
-        showTyping();
+            // Hiển thị typing indicator
+            showTyping();
 
-        // Disable input
-        messageInput.disabled = true;
-        sendButton.disabled = true;
+            // Disable input
+            messageInput.disabled = true;
+            sendButton.disabled = true;
 
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: message,
-                    session: sessionData
-                })
-            });
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session: sessionData
+                    })
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            if (response.ok) {
-                // Cập nhật session data
-                sessionData = {
-                    stage: data.stage || sessionData.stage,
-                    preferences: data.preferences || sessionData.preferences
-                };
+                if (response.ok) {
+                    // Cập nhật session data
+                    sessionData = {
+                        stage: data.stage || sessionData.stage,
+                        preferences: data.preferences || sessionData.preferences,
+                        currentHotels: data.hotels || data.currentHotels || sessionData.currentHotels
+                    };
 
-                // Hiệu ứng delay để tạo cảm giác "đang suy nghĩ"
-                setTimeout(() => {
-                    hideTyping();
+                    // Hiệu ứng delay để tạo cảm giác "đang suy nghĩ"
+                    setTimeout(() => {
+                        hideTyping();
+                        addMessage(data.response);
+                    }, 1000);
 
-                    // HIỂN THỊ TEXT TRƯỚC
-                    addMessage(data.response);
-
-                    // SAU ĐÓ HIỂN THỊ CARD NẾU CÓ (chỉ hiển thị 1 lần)
-                    if (data.hotels && data.hotels.length > 0 && data.stage === 'follow_up') {
-                        // Đợi một chút để text hiển thị trước
-                        setTimeout(() => {
-                            displayHotelCards(data.hotels);
-                        }, 100);
-                    }
-                }, 1000);
-
-            } else {
-                throw new Error(data.error || 'Có lỗi xảy ra');
+                } else {
+                    throw new Error(data.error || 'Có lỗi xảy ra');
+                }
+            } catch (error) {
+                hideTyping();
+                addMessage('Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.');
+                console.error('Error:', error);
+            } finally {
+                // Enable input
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                messageInput.focus();
             }
-        } catch (error) {
-            hideTyping();
-            addMessage('Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.');
-            console.error('Error:', error);
-        } finally {
-            // Enable input
-            messageInput.disabled = false;
-            sendButton.disabled = false;
-            messageInput.focus();
         }
-    }
 
         // Xử lý submit form
         chatForm.addEventListener('submit', async (e) => {
@@ -368,16 +362,6 @@
                 chatForm.dispatchEvent(new Event('submit'));
             }
         });
-
-        // Gợi ý nhanh (tuỳ chọn)
-        const quickSuggestions = [
-            "Tìm khách sạn ở Đà Nẵng giá rẻ",
-            "Khách sạn 5 sao có hồ bơi",
-            "Khách sạn gần biển view đẹp",
-            "Khách sạn có buffet sáng"
-        ];
-
-        // Có thể thêm tính năng gợi ý nhanh sau này nếu cần
     </script>
 </body>
 </html>
