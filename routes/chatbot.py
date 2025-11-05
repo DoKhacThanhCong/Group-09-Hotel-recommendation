@@ -161,31 +161,33 @@ def generate_hotel_recommendations(user_prefs, base_data):
         return [], "Không tìm thấy khách sạn phù hợp."
 
 def create_simple_hotel_response(hotels, explanation):
-    """Tạo câu trả lời đơn giản với khung khách sạn đồng đều - KHÔNG mô tả, KHÔNG điểm AI"""
+    """Tạo câu trả lời đơn giản với khung khách sạn - KHÔNG mô tả, KHÔNG điểm AI"""
     if not hotels:
         return "Xin lỗi, không tìm thấy khách sạn nào phù hợp với yêu cầu của bạn.", False
     
-    response = "🏨 **Tôi tìm thấy các khách sạn phù hợp:**\n\n"
+    response = "**Tôi đã tìm thấy các khách sạn phù hợp cho du khách ạ**\n\n"
     
     for i, hotel in enumerate(hotels, 1):
-        response += f"**{i}. {hotel['name']}**\n"
-        response += f"   ⭐ {hotel['stars']} sao | 💰 {hotel['price']:,} VND\n"
-        response += f"   📍 {hotel['city']} | ⭐ {hotel['rating']}/5\n"
+        response += f"**{hotel['name']}**\n"
+        response += f"⭐ {hotel['stars']} sao | 💰 {hotel['price']:,} VND/đêm\n"
+        response += f"📍 {hotel['city']} | ⭐ {hotel['rating']}/5\n"
         
         # Thêm biểu tượng tính năng ngắn gọn
         features = []
-        if hotel.get('pool'): features.append("🏊")
-        if hotel.get('buffet'): features.append("🍽️") 
-        if hotel.get('gym'): features.append("💪")
-        if hotel.get('spa'): features.append("💆")
-        if hotel.get('sea'): features.append("🌊")
+        if hotel.get('pool'): features.append("🏊 Hồ bơi")
+        if hotel.get('buffet'): features.append("🍽️ Buffet sáng") 
+        if hotel.get('gym'): features.append("💪 Gym")
+        if hotel.get('spa'): features.append("💆 Spa")
+        if hotel.get('sea'): features.append("🌊 View biển")
+        if hotel.get('view'): features.append("🏞️ View đẹp")
         
         if features:
-            response += f"   🎯 {''.join(features)}\n"
+            response += f"🎯 {', '.join(features)}\n"
         
-        response += "\n"  # Khoảng cách giữa các khách sạn
+        if i < len(hotels):  # Không thêm dấu cách sau khách sạn cuối
+            response += "\n" + "─" * 40 + "\n\n"
     
-    response += "💬 **Bạn có muốn tìm kiếm với tiêu chí khác không?**"
+    response += "\n**Du khách có muốn tìm kiếm với tiêu chí khác không ạ?**"
     return response, True
 
 # Routes cho chatbot
