@@ -100,5 +100,9 @@ def calculate_scores_and_explain(df, all_prefs):
 
     # TRẢ VỀ KẾT QUẢ ---
     final_explanation = " ".join(explanation_log)
+
+    num_results = min(3, len(final_results_sorted))
+    print(f"[AI] Trả về {num_results} khách sạn")
     
     return final_results_sorted, final_explanation
+
