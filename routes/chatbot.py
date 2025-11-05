@@ -239,10 +239,6 @@ def process_chat_message(user_message, session_data):
         hotels, explanation = generate_hotel_recommendations(extracted_info, base_data)
         response_text, has_results = create_simple_hotel_response(hotels, explanation)
         
-        # Thêm câu hỏi follow-up nếu có kết quả
-        if has_results:
-            response_text += "\n\n**Du khách có muốn tìm kiếm với tiêu chí khác không ạ?**"
-        
         return {
             'response': response_text,
             'stage': 'follow_up',
