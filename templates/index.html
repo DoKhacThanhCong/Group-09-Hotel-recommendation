@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -25,18 +25,6 @@
             position: relative;
         }
 
-        /* 🔹 Hiệu ứng nền động */
-        lottie-player {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.95;
-        }
-
-        /* 🔹 Thanh menu */
         nav.navbar {
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(10px);
@@ -51,78 +39,34 @@
         .navbar-brand, .nav-link {
             color: white !important;
             font-weight: 500;
-            transition: color 0.3s;
         }
 
             .nav-link:hover {
                 color: #ffcc70 !important;
             }
 
-        /* 🔹 Hero */
         .hero {
             text-align: center;
             padding-top: 140px;
             animation: fadeDown 1.2s ease;
         }
 
-        @keyframes fadeDown {
-            from {
-                opacity: 0;
-                transform: translateY(-40px);
+            .hero h1 {
+                font-weight: 600;
+                font-size: 3rem;
+                background: linear-gradient(270deg, #ff8a00, #e52e71, #ff8a00);
+                background-size: 600% 600%;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                animation: glow 4s ease infinite, gradientShift 6s ease infinite;
+                text-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
             }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            .hero p {
+                font-size: 1.2rem;
+                color: #f5f5f5;
+                margin-bottom: 40px;
             }
-        }
-
-        .hero h1 {
-            font-weight: 600;
-            font-size: 3rem;
-            /* Hiệu ứng gradient trong chữ */
-            background: linear-gradient(270deg, #ff8a00, #e52e71, #ff8a00);
-            background-size: 600% 600%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            /* Glow animation */
-            animation: glow 4s ease infinite, gradientShift 6s ease infinite;
-            text-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        @keyframes glow {
-            0% {
-                text-shadow: 0 0 10px #fff;
-            }
-
-            50% {
-                text-shadow: 0 0 25px #ffcc70;
-            }
-
-            100% {
-                text-shadow: 0 0 10px #fff;
-            }
-        }
-
-        @keyframes gradientShift {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            color: #f5f5f5;
-            margin-bottom: 40px;
-        }
 
         .search-box {
             background: rgba(0, 0, 0, 0.5);
@@ -133,18 +77,6 @@
             max-width: 90%;
             margin: 0 auto;
             animation: zoomIn 1.5s ease;
-        }
-
-        @keyframes zoomIn {
-            from {
-                transform: scale(0.8);
-                opacity: 0;
-            }
-
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
         }
 
         .btn-custom {
@@ -183,16 +115,68 @@
             position: relative;
             z-index: 1;
         }
+
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glow {
+            0% {
+                text-shadow: 0 0 10px #fff;
+            }
+
+            50% {
+                text-shadow: 0 0 25px #ffcc70;
+            }
+
+            100% {
+                text-shadow: 0 0 10px #fff;
+            }
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <!-- 🌈 Video background -->
+    <!-- Video background -->
     <video autoplay muted loop playsinline id="bg-video">
-        <source src="https://dl.dropboxusercontent.com/scl/fi/zwyuq6j7wqeynwrpfao45/Hailuo_Video_create-me-a-2d-video-of-a-man-_439927170696192002.mp4?rlkey=jknr5997ddu619skmo8mez7mx&st=5qr7zowi" type="video/mp4">
+        <source src="{{ url_for('static', filename='videos/bg.mp4') }}" type="video/mp4">
     </video>
 
-    <!-- 🔝 Navbar -->
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="/">
@@ -207,19 +191,20 @@
                     <li class="nav-item"><a class="nav-link" href="/">Trang chủ</a></li>
                     <li class="nav-item"><a class="nav-link" href="/about">Giới thiệu</a></li>
                     <li class="nav-item"><a class="nav-link" href="#search">Tìm kiếm</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/chatbot">💬 Chatbot Tư vấn</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/history">📘 Lịch sử đặt phòng</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/login">🔑 Admin</a></li> <!-- ✅ Nút Admin -->
                     <li class="nav-item"><a class="nav-link" href="tel:+84987654321">📞 0987 654 321</a></li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- 🌟 Hero -->
+    <!-- Hero -->
     <div class="hero">
         <h1>Khám phá khách sạn mơ ước của bạn ✨</h1>
         <p>Tìm nơi lưu trú lý tưởng — nhanh chóng, dễ dàng và thông minh hơn.</p>
 
-        <!-- 🔍 Form tìm kiếm -->
+        <!-- Search Form -->
         <form action="/recommend" method="POST" class="search-box" id="search">
             <div class="mb-3">
                 <label class="form-label">📍 Thành phố</label>
@@ -249,6 +234,12 @@
             </div>
 
             <button type="submit" class="btn btn-custom w-100 py-2">🔍 Tìm khách sạn</button>
+
+            <div class="mt-4">
+                <a href="/history" class="btn btn-outline-light px-4 py-2" style="border-radius:30px;">
+                    📘 Xem lịch sử đặt phòng của bạn
+                </a>
+            </div>
         </form>
     </div>
 
