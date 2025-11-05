@@ -177,11 +177,114 @@
             font-weight: 600;
             margin-top: 5px;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
             .detail-link:hover {
                 transform: translateY(-1px);
                 box-shadow: 0 4px 8px rgba(0, 184, 148, 0.3);
+            }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            background: none;
+            border: none;
+        }
+
+            .close-modal:hover {
+                color: #333;
+            }
+
+        .hotel-detail-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+            .hotel-detail-header h2 {
+                color: #2c3e50;
+                margin-bottom: 10px;
+            }
+
+        .hotel-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .features-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .feature-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .book-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+
+            .book-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
             }
     </style>
 </head>
@@ -211,15 +314,29 @@
         Quay lại trang chủ
     </a>
 
+    <!-- Modal hiển thị chi tiết khách sạn -->
+    <div class="modal" id="hotelModal">
+        <div class="modal-content">
+            <button class="close-modal" id="closeModal">&times;</button>
+            <div id="hotelDetailContent">
+                <!-- Nội dung chi tiết sẽ được điền ở đây -->
+            </div>
+        </div>
+    </div>
+
     <script>
         const chatMessages = document.getElementById('chatMessages');
         const chatForm = document.getElementById('chatForm');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
+        const hotelModal = document.getElementById('hotelModal');
+        const closeModal = document.getElementById('closeModal');
+        const hotelDetailContent = document.getElementById('hotelDetailContent');
 
         let sessionData = {
             stage: 'greeting',
-            preferences: {}
+            preferences: {},
+            currentHotels: []
         };
 
         // Tự động chào khi trang load
@@ -229,6 +346,73 @@
             }, 500);
         });
 
+        // Modal functions
+        function showHotelModal(hotelData) {
+            const features = [];
+            if (hotelData.pool) features.push('🏊 Hồ bơi');
+            if (hotelData.buffet) features.push('🍽️ Buffet sáng');
+            if (hotelData.gym) features.push('💪 Gym');
+            if (hotelData.spa) features.push('💆 Spa');
+            if (hotelData.sea) features.push('🌊 View biển');
+            if (hotelData.view) features.push('🏞️ View đẹp');
+
+            hotelDetailContent.innerHTML = `
+                    <div class="hotel-detail-header">
+                        <h2>${hotelData.name}</h2>
+                        <div style="color: #f39c12; font-size: 16px;">
+                            ${'⭐'.repeat(Math.floor(hotelData.stars))} ${hotelData.stars} sao
+                        </div>
+                    </div>
+
+                    <div class="hotel-info-grid">
+                        <div class="info-item">
+                            <span style="font-weight: bold; color: #e74c3c;">💰</span>
+                            <span>${hotelData.price.toLocaleString()} VND/đêm</span>
+                        </div>
+                        <div class="info-item">
+                            <span style="font-weight: bold; color: #27ae60;">⭐</span>
+                            <span>Đánh giá: ${hotelData.rating}/5</span>
+                        </div>
+                        <div class="info-item">
+                            <span style="font-weight: bold; color: #3498db;">📍</span>
+                            <span>${hotelData.city}</span>
+                        </div>
+                    </div>
+
+                    ${features.length > 0 ? `
+                        <div>
+                            <h4 style="margin-bottom: 10px;">🎯 Tiện ích</h4>
+                            <div class="features-list">
+                                ${features.map(feature => `<span class="feature-tag">${feature}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${hotelData.review ? `
+                        <div style="margin-top: 20px;">
+                            <h4 style="margin-bottom: 10px;">📝 Đánh giá</h4>
+                            <p style="color: #666; line-height: 1.5;">${hotelData.review}</p>
+                        </div>
+                    ` : ''}
+
+                    <button class="book-button" onclick="window.open('/book/${encodeURIComponent(hotelData.name)}', '_blank')">
+                        🏨 Đặt phòng ngay
+                    </button>
+                `;
+
+            hotelModal.style.display = 'flex';
+        }
+
+        closeModal.addEventListener('click', function () {
+            hotelModal.style.display = 'none';
+        });
+
+        hotelModal.addEventListener('click', function (e) {
+            if (e.target === hotelModal) {
+                hotelModal.style.display = 'none';
+            }
+        });
+
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
@@ -236,7 +420,7 @@
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
 
-            // Xử lý nội dung có định dạng và chuyển đổi link
+            // Xử lý nội dung có định dạng
             let formattedContent = content
                 .replace(/\n/g, '<br>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -255,16 +439,30 @@
                 .replace(/💆/g, '💆 ')
                 .replace(/🔍/g, '🔍 ');
 
-            // Xử lý các link xem chi tiết
+            // Xử lý các link xem chi tiết - chuyển thành nút mở modal
             formattedContent = formattedContent.replace(
                 /\[Xem chi tiết (.*?)\]\(\/hotel\/(.*?)\)/g,
-                '<a href="/hotel/$2" class="detail-link" target="_blank">🔍 Xem chi tiết $1</a>'
+                '<span class="detail-link" data-hotel-index="$1">🔍 Xem chi tiết $1</span>'
             );
 
             contentDiv.innerHTML = formattedContent;
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Thêm event listener cho các nút xem chi tiết
+            setTimeout(() => {
+                const detailLinks = contentDiv.querySelectorAll('.detail-link');
+                detailLinks.forEach(link => {
+                    link.addEventListener('click', function () {
+                        const hotelName = this.getAttribute('data-hotel-index');
+                        const hotel = sessionData.currentHotels.find(h => h.name === hotelName);
+                        if (hotel) {
+                            showHotelModal(hotel);
+                        }
+                    });
+                });
+            }, 100);
         }
 
         function showTyping() {
@@ -312,7 +510,8 @@
                     // Cập nhật session data
                     sessionData = {
                         stage: data.stage || sessionData.stage,
-                        preferences: data.preferences || sessionData.preferences
+                        preferences: data.preferences || sessionData.preferences,
+                        currentHotels: data.hotels || sessionData.currentHotels
                     };
 
                     // Hiệu ứng delay để tạo cảm giác "đang suy nghĩ"
