@@ -68,11 +68,9 @@
             }
         }
 
-        .room-img {
-            width: 100%;
-            border-radius: 18px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        .status-badge {
+            font-size: 1rem;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -82,6 +80,14 @@
         <div class="hotel-title">
             <h1>🏨 {{ hotel.name }}</h1>
             <p class="text-muted">{{ hotel.city }} • ⭐ {{ hotel.stars }} sao</p>
+            <p>
+                Trạng thái:
+                {% if is_available %}
+                <span class="badge bg-success status-badge">Còn phòng</span>
+                {% else %}
+                <span class="badge bg-danger status-badge">Hết phòng</span>
+                {% endif %}
+            </p>
         </div>
 
         <div class="row justify-content-center">
@@ -89,43 +95,45 @@
                 <div class="card p-4">
                     <h4 class="mb-3 text-center text-primary">🛏️ Đặt {{ room_type }}</h4>
 
-                    <form method="POST">
+                    <form method="POST" {% if not is_available %}onsubmit="return false;" {% endif %}>
                         <div class="mb-3">
                             <label class="form-label">Họ và tên</label>
-                            <input type="text" class="form-control" name="fullname" required>
+                            <input type="text" class="form-control" name="fullname" required {% if not is_available %}disabled{% endif %}>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Số điện thoại</label>
-                            <input type="tel" class="form-control" name="phone" required>
+                            <input type="tel" class="form-control" name="phone" required {% if not is_available %}disabled{% endif %}>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Email (nếu có)</label>
-                            <input type="email" class="form-control" name="email">
+                            <input type="email" class="form-control" name="email" {% if not is_available %}disabled{% endif %}>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Ngày nhận phòng</label>
-                                <input type="date" class="form-control" name="checkin" required>
+                                <input type="date" class="form-control" name="checkin" required {% if not is_available %}disabled{% endif %}>
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label class="form-label">Người lớn</label>
-                                <input type="number" class="form-control" name="adults" min="1" value="1">
+                                <input type="number" class="form-control" name="adults" min="1" value="1" {% if not is_available %}disabled{% endif %}>
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label class="form-label">Trẻ em</label>
-                                <input type="number" class="form-control" name="children" min="0" value="0">
+                                <input type="number" class="form-control" name="children" min="0" value="0" {% if not is_available %}disabled{% endif %}>
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Ghi chú / Yêu cầu riêng</label>
-                            <textarea class="form-control" name="note" rows="3" placeholder="Ví dụ: phòng view biển, thêm giường phụ..."></textarea>
+                            <textarea class="form-control" name="note" rows="3" placeholder="Ví dụ: phòng view biển, thêm giường phụ..." {% if not is_available %}disabled{% endif %}></textarea>
                         </div>
 
-                        <button type="submit" class="btn btn-custom w-100 py-2">💳 Xác nhận đặt phòng</button>
+                        <button type="submit" class="btn btn-custom w-100 py-2" {% if not is_available %}disabled{% endif %}>
+                            💳 Xác nhận đặt phòng
+                        </button>
                     </form>
                 </div>
             </div>
