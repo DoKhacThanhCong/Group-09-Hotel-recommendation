@@ -236,7 +236,7 @@ def process_chat_message(user_message, session_data):
         
         # Thêm câu hỏi follow-up nếu có kết quả
         if has_results:
-            response_text += "\n\n**Du khách có muốn tìm kiếm với tiêu chí khác không ạ?**"
+            response_text += "\n\n**Du khách có muốn tìm kiếm khách sạn với tiêu chí khác không ạ?**"
         
         return {
             'response': response_text,
