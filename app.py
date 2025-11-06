@@ -5,12 +5,12 @@ import re
 from datetime import datetime
 from flask_mail import Mail, Message  # thêm thư viện mail
 import tempfile
-from flask import session, flash
-from flask import flash, redirect, url_for
 from routes.chatbot import init_chatbot_routes
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
+
+init_chatbot_routes(app)
 
 # -------------------------
 # ĐƯỜNG DẪN FILE (LINH HOẠT)
@@ -356,9 +356,6 @@ def booking_history():
 def about_page():
     return render_template('about.html')
 
-from flask import session, flash
-
-
 # === ĐĂNG NHẬP QUẢN TRỊ ===
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -570,4 +567,5 @@ def update_hotel_status(name, status):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
