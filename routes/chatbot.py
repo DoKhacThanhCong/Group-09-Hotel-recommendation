@@ -132,7 +132,6 @@ def has_sufficient_info(preferences):
     return criteria_count >= 1  # Chỉ cần 1 tiêu chí là đủ
 
 def generate_hotel_recommendations(user_prefs, base_data):
-    """Tạo danh sách khách sạn đề xuất - SỬA ĐỂ TRẢ VỀ 3 KHÁCH SẠN"""
     if base_data is None or base_data.empty:
         return [], "Không có dữ liệu khách sạn."
 
@@ -165,9 +164,8 @@ def generate_hotel_recommendations(user_prefs, base_data):
         return [], "Không tìm thấy khách sạn phù hợp."
 
 def create_simple_hotel_response(hotels, explanation):
-    """Tạo câu trả lời đơn giản với khung khách sạn - KHÔNG mô tả, KHÔNG điểm AI"""
     if not hotels:
-        return "Xin lỗi, không tìm thấy khách sạn nào phù hợp với yêu cầu của bạn.", False
+        return "Xin lỗi, không tìm thấy khách sạn nào phù hợp.", False
     
     response = "**Tôi đã tìm thấy các khách sạn phù hợp cho du khách ạ**\n\n"
     
@@ -176,7 +174,7 @@ def create_simple_hotel_response(hotels, explanation):
         response += f"⭐ {hotel['stars']} sao | 💰 {hotel['price']:,} VND/đêm\n"
         response += f"📍 {hotel['city']} | ⭐ {hotel['rating']}/5\n"
         
-        # Thêm biểu tượng tính năng ngắn gọn
+        # Thêm biểu tượng tính năng
         features = []
         if hotel.get('pool'): features.append("🏊 Hồ bơi")
         if hotel.get('buffet'): features.append("🍽️ Buffet sáng") 
@@ -188,10 +186,10 @@ def create_simple_hotel_response(hotels, explanation):
         if features:
             response += f"🎯 {', '.join(features)}\n"
         
-        # THÊM NÚT XEM CHI TIẾT (Modal)
-        response += f"🔍 [Xem chi tiết {hotel['name']}](/hotel/{hotel['name'].replace(' ', '%20')})\n"
+        hotel_name_encoded = hotel['name'].replace(' ', '%20')
+        response += f" [Xem chi tiết {hotel['name']}](/hotel/{hotel_name_encoded})\n"
         
-        if i < len(hotels):  # Không thêm dấu cách sau khách sạn cuối
+        if i < len(hotels):
             response += "\n" + "─" * 50 + "\n\n"
     
     response += "**Du khách có muốn tìm kiếm với tiêu chí khác không ạ?**"
