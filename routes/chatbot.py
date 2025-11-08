@@ -579,7 +579,7 @@ def _get_alternative_suggestions(insights):
     return suggestions.get(context, "Hãy thử điều chỉnh tiêu chí tìm kiếm nhé!")
 
 def process_chat_message(user_message, session_data):
-    """Xử lý tin nhắn chat với AI tích hợp"""
+    """Xử lý tin nhắn chat với AI tích hợp - CẢI TIẾN"""
     stage = session_data.get('stage', 'greeting')
     user_id = session_data.get('user_id', 'default_user')
     
@@ -588,7 +588,7 @@ def process_chat_message(user_message, session_data):
     if special_response:
         return special_response
     
-    # Phân tích AI nâng cao
+    # Phân tích AI nâng cao - LUÔN chạy dù có phải yêu cầu khách sạn hay không
     ai_insights = ai_engine.process_user_message(user_id, user_message)
     
     # Kiểm tra từ chối
@@ -607,6 +607,36 @@ def process_chat_message(user_message, session_data):
     
     # Phân tích yêu cầu hỗn hợp
     extracted_info = extract_all_preferences_from_text(user_message)
+    
+    # THÊM ĐOẠN NÀY: Nếu là tin nhắn cảm xúc, tự động đề xuất dựa trên AI insights
+    emotion = ai_insights['sentiment']['emotion']
+    primary_context = ai_insights['context']['primary_context']
+    
+    # Nếu người dùng thể hiện cảm xúc mạnh, tự động đề xuất khách sạn phù hợp
+    if emotion in ['sadness', 'anger', 'fear', 'disgust'] and not extracted_info:
+        # Tạo preferences dựa trên phân tích AI
+        ai_based_preferences = {
+            'city': None,  # Có thể để None hoặc đề xuất thành phố phổ biến
+            'budget': None,
+            'min_stars': 0,
+            'features': {},
+            'text_query': user_message,
+            'ai_context': primary_context  # Thêm context từ AI
+        }
+        
+        # Tìm khách sạn dựa trên phân tích cảm xúc
+        hotels, explanation = generate_hotel_recommendations(ai_based_preferences, base_data)
+        response_text, has_results = create_ai_enhanced_response(hotels, ai_insights, user_message)
+        
+        return {
+            'response': response_text,
+            'stage': 'follow_up',
+            'preferences': ai_based_preferences,
+            'hotels': hotels,
+            'currentHotels': hotels,
+            'has_results': has_results,
+            'ai_insights': ai_insights
+        }
     
     # Nếu phân tích được thông tin từ yêu cầu hỗn hợp
     if extracted_info and has_sufficient_info(extracted_info):
@@ -627,16 +657,20 @@ def process_chat_message(user_message, session_data):
     user_prefs = session_data.get('preferences', {})
     
     if stage == 'greeting':
+        # Sử dụng AI insights để tạo greeting phù hợp
+        emotional_greeting = _get_emotional_response(ai_insights)
         return {
-            'response': "Xin chào du khách! 👋 Hãy cho tôi biết bạn muốn tìm khách sạn như thế nào? (ví dụ: 'Khách sạn ở Đà Nẵng có hồ bơi', 'Phòng giá rẻ ở Hà Nội', 'Khách sạn 5 sao có buffet')",
+            'response': f"{emotional_greeting}\n\nHãy cho tôi biết bạn muốn tìm khách sạn như thế nào? (ví dụ: 'Khách sạn ở Đà Nẵng có hồ bơi', 'Phòng giá rẻ ở Hà Nội', 'Khách sạn 5 sao có buffet')",
             'stage': 'awaiting_request', 
             'preferences': user_prefs,
             'ai_insights': ai_insights
         }
     
     elif stage == 'awaiting_request':
+        # Sử dụng AI insights để hỏi phù hợp với cảm xúc
+        emotional_followup = _get_emotional_followup(ai_insights)
         return {
-            'response': "Bạn có thể nói rõ hơn về yêu cầu được không? Ví dụ:\n• 'Khách sạn ở Hà Nội có hồ bơi'\n• 'Phòng giá dưới 2 triệu' \n• 'Khách sạn 4 sao ở Đà Nẵng'",
+            'response': f"{emotional_followup}\n\nBạn có thể nói rõ hơn về yêu cầu được không? Ví dụ:\n• 'Khách sạn ở Hà Nội có hồ bơi'\n• 'Phòng giá dưới 2 triệu' \n• 'Khách sạn 4 sao ở Đà Nẵng'",
             'stage': 'awaiting_request',
             'preferences': user_prefs,
             'ai_insights': ai_insights
@@ -668,20 +702,50 @@ def process_chat_message(user_message, session_data):
                     'ai_insights': ai_insights
                 }
             else:
+                # Sử dụng AI insights để tạo câu hỏi follow-up phù hợp
+                emotional_question = _get_emotional_question(ai_insights)
                 return {
-                    'response': "Bạn muốn tìm kiếm với tiêu chí gì khác? (ví dụ: thêm hồ bơi, đổi thành phố, giá cả khác...)",
+                    'response': f"{emotional_question}\n\nBạn muốn tìm kiếm với tiêu chí gì khác? (ví dụ: thêm hồ bơi, đổi thành phố, giá cả khác...)",
                     'stage': 'follow_up',
                     'preferences': user_prefs,
                     'ai_insights': ai_insights
                 }
     
-    # Mặc định
+    # Mặc định với AI insights
     return {
-        'response': "Hãy cho tôi biết bạn muốn tìm khách sạn như thế nào? (ví dụ: 'Khách sạn ở Đà Nẵng', 'Phòng có hồ bơi', 'Giá dưới 3 triệu')",
+        'response': f"{_get_emotional_response(ai_insights)}\n\nHãy cho tôi biết bạn muốn tìm khách sạn như thế nào? (ví dụ: 'Khách sạn ở Đà Nẵng', 'Phòng có hồ bơi', 'Giá dưới 3 triệu')",
         'stage': 'awaiting_request',
         'preferences': {},
         'ai_insights': ai_insights
     }
+
+def _get_emotional_followup(insights):
+    """Tạo câu hỏi follow-up dựa trên cảm xúc"""
+    emotion = insights.get('sentiment', {}).get('emotion', 'neutral')
+    followup_messages = {
+        'sadness': "💫 Mình hiểu bạn đang có tâm trạng không vui...",
+        'joy': "🎉 Thật tuyệt khi thấy bạn vui vẻ!",
+        'anger': "😥 Mình cảm nhận được sự bức bối...", 
+        'fear': "🛡️ Đừng quá lo lắng nhé!",
+        'surprise': "🤩 Ôi thú vị quá!",
+        'disgust': "🍃 Mình hiểu cảm giác khó chịu đó...",
+        'neutral': "😊"
+    }
+    return followup_messages.get(emotion, followup_messages['neutral'])
+
+def _get_emotional_question(insights):
+    """Tạo câu hỏi dựa trên cảm xúc"""
+    emotion = insights.get('sentiment', {}).get('emotion', 'neutral')
+    questions = {
+        'sadness': "💫 Có phải bạn muốn tìm một nơi để thư giãn và healing không?",
+        'joy': "🎉 Bạn muốn tìm khách sạn để tiếp tục tận hưởng niềm vui?",
+        'anger': "🌿 Có phải bạn cần một không gian yên tĩnh để lấy lại cân bằng?",
+        'fear': "🛡️ Bạn muốn tìm nơi an toàn và thoải mái phải không?",
+        'surprise': "🤩 Bạn đang có kế hoạch gì thú vị vậy?",
+        'disgust': "🍃 Có phải bạn cần một không gian trong lành để refresh?",
+        'neutral': "🔍"
+    }
+    return questions.get(emotion, questions['neutral'])
 
 def init_chatbot_routes(app):
     @app.route('/chatbot')
