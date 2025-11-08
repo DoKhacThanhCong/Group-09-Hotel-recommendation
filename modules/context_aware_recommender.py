@@ -1,22 +1,16 @@
-# modules/context_aware_recommender.py
 import numpy as np
 import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
+from collections import Counter
 
 class ContextAwareRecommender:
     def __init__(self):
-        try:
-            # Pre-trained sentence embeddings
-            self.sentence_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-        except:
-            self.sentence_model = None
+        self.sentence_model = None  # Không dùng model trên production
         
-        # Context embeddings
+        # Context embeddings đơn giản
         self.context_embeddings = self._initialize_context_embeddings()
         
     def _initialize_context_embeddings(self):
-        """Khởi tạo embeddings cho các ngữ cảnh du lịch"""
+        """Khởi tạo embeddings đơn giản cho các ngữ cảnh du lịch"""
         contexts = {
             'heartbreak_recovery': "buồn tình cảm chia tay healing tâm hồn thất tình cô đơn",
             'business_trip': "công tác chuyên nghiệp hiệu quả meeting đối tác work",
@@ -27,35 +21,11 @@ class ContextAwareRecommender:
             'celebration': "kỷ niệm ăn mừng party vui vẻ thành công",
             'workation': "làm việc từ xa digital nomad wifi yên tĩnh"
         }
-        
-        if self.sentence_model:
-            return {key: self.sentence_model.encode([value])[0] for key, value in contexts.items()}
-        else:
-            return contexts
+        return contexts
     
     def predict_travel_context(self, user_message, user_history=None):
-        """Dự đoán ngữ cảnh du lịch"""
-        if self.sentence_model is None:
-            return self._simple_context_prediction(user_message)
-            
-        try:
-            user_embedding = self.sentence_model.encode([user_message])[0]
-            
-            similarities = {}
-            for context, context_embedding in self.context_embeddings.items():
-                similarity = cosine_similarity([user_embedding], [context_embedding])[0][0]
-                similarities[context] = similarity
-            
-            # Lấy top 2 contexts
-            top_contexts = sorted(similarities.items(), key=lambda x: x[1], reverse=True)[:2]
-            
-            return {
-                'primary_context': top_contexts[0][0],
-                'secondary_context': top_contexts[1][0] if len(top_contexts) > 1 else None,
-                'confidence_scores': similarities
-            }
-        except:
-            return self._simple_context_prediction(user_message)
+        """Dự đoán ngữ cảnh du lịch - Production version"""
+        return self._simple_context_prediction(user_message)
     
     def _simple_context_prediction(self, user_message):
         """Dự đoán ngữ cảnh đơn giản"""
@@ -126,3 +96,4 @@ class ContextAwareRecommender:
         )
         
         return context_rules
+
