@@ -502,8 +502,7 @@ def create_ai_enhanced_response(hotels, ai_insights, user_message):
         if features:
             hotel_part += f"🎯 {', '.join(features)}\n"
         
-        hotel_name_encoded = hotel['name'].replace(' ', '%20')
-        hotel_part += f"🔍 [Xem chi tiết & đặt phòng](/hotel/{hotel_name_encoded})\n"
+        hotel_part += f"<button class='detail-link' data-hotel-name='{hotel['name']}'> Xem chi tiết {hotel['name']}</button>"
         
         response_parts.append(hotel_part)
         
