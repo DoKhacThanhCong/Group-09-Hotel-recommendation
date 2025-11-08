@@ -24,7 +24,7 @@ class AdvancedSentimentAnalyzer:
             self.emotion_classifier = None
     
     def analyze_user_state(self, user_message):
-        """Ph�n t�ch c?m x�c v� tr?ng th�i ng??i d�ng"""
+        """Phân tích cảm xúc và trạng thái người dùng"""
         if self.sentiment_analyzer is None:
             return self._simple_analysis(user_message)
             
@@ -49,12 +49,12 @@ class AdvancedSentimentAnalyzer:
             return self._simple_analysis(user_message)
     
     def _simple_analysis(self, text):
-        """Ph�n t�ch ??n gi?n khi kh�ng c� model"""
+        """Phân tích đơn giản khi không có model"""
         text_lower = text.lower()
         
         # Basic sentiment detection
-        positive_words = ['vui', 't?t', 'tuy?t', 'th�ch', 'happy', 'good']
-        negative_words = ['bu?n', 't?', 'x?u', 'gh�t', 'sad', 'bad', 'huhu', 'ti?c']
+        positive_words = ['vui', 'tốt', 'tuyệt', 'thích', 'happy', 'good']
+        negative_words = ['buồn', 'tệ', 'xấu', 'ghét', 'sad', 'bad', 'huhu', 'tiếc']
         
         positive_count = sum(1 for word in positive_words if word in text_lower)
         negative_count = sum(1 for word in negative_words if word in text_lower)
@@ -77,13 +77,13 @@ class AdvancedSentimentAnalyzer:
         }
     
     def _detect_emotion_simple(self, text_lower):
-        """Ph�t hi?n c?m x�c ??n gi?n"""
+        """Phát hiện cảm xúc đơn giản"""
         emotion_keywords = {
-            'sadness': ['bu?n', 'huhu', 'kh�c', 'th?t v?ng', 'chia tay', 'm?t'],
-            'joy': ['vui', 'happy', 'ph?n kh�ch', 'tuy?t v?i', 'th�ch'],
-            'anger': ['t?c', 'gi?n', 'b?c', 'kh� ch?u', 't?c gi?n'],
-            'fear': ['s?', 'lo', 'ho?ng', 'b?t an', 'lo l?ng'],
-            'surprise': ['�i', 'wow', 'b?t ng?', 'ng?c nhi�n']
+            'sadness': ['buồn', 'huhu', 'khóc', 'thất vọng', 'chia tay', 'mất'],
+            'joy': ['vui', 'happy', 'phấn khích', 'tuyệt vời', 'thích'],
+            'anger': ['tức', 'giận', 'bực', 'khó chịu', 'tức giận'],
+            'fear': ['sợ', 'lo', 'hoảng', 'bất an', 'lo lắng'],
+            'surprise': ['ôi', 'wow', 'bất ngờ', 'ngạc nhiên']
         }
         
         for emotion, keywords in emotion_keywords.items():
@@ -92,12 +92,12 @@ class AdvancedSentimentAnalyzer:
         return 'neutral'
     
     def _detect_urgency(self, text):
-        """Ph�t hi?n m?c ?? kh?n c?p"""
+        """Phát hiện mức độ khẩn cấp"""
         text_lower = text.lower()
         urgency_keywords = {
-            'high': ['g?p', 'ngay', 'kh?n c?p', 'c?n ngay', 'nhanh', 'l?p t?c'],
-            'medium': ['s?m', 'tu?n sau', 'th�ng sau', 'k? ho?ch', 'd? ??nh'],
-            'low': ['l�c n�o c?ng ???c', 'kh�ng v?i', 't??ng lai', 'khi n�o r?nh']
+            'high': ['gấp', 'ngay', 'khẩn cấp', 'cần ngay', 'nhanh', 'lập tức'],
+            'medium': ['sớm', 'tuần sau', 'tháng sau', 'kế hoạch', 'dự định'],
+            'low': ['lúc nào cũng được', 'không vội', 'tương lai', 'khi nào rảnh']
         }
         
         for level, keywords in urgency_keywords.items():
@@ -106,18 +106,18 @@ class AdvancedSentimentAnalyzer:
         return 'medium'
     
     def _extract_needs(self, text):
-        """Tr�ch xu?t nhu c?u ?n"""
+        """Trích xuất nhu cầu ẩn"""
         text_lower = text.lower()
         needs = []
         
         need_patterns = {
-            'relaxation': ['th? gi�n', 'ngh? ng?i', 'x? stress', 'm?t m?i', 'c?ng th?ng'],
-            'celebration': ['k? ni?m', 'sinh nh?t', 'c??i', 'th�nh c�ng', '?n m?ng'],
-            'business': ['c�ng t�c', 'meeting', '??i t�c', 'd? �n', 'work'],
-            'adventure': ['kh�m ph�', 'tr?i nghi?m', 'm?o hi?m', 'm?i l?', 'phi�u l?u'],
-            'healing': ['ch?a l�nh', 't?nh t�m', 'thi?n', 'suy ngh?', 'chia tay'],
-            'family': ['gia ?�nh', 'con nh?', 'tr? em', 'b? m?', '�ng b�'],
-            'romance': ['l�ng m?n', 'ng??i y�u', 'c?p ?�i', 't�nh nh�n', 'anniversary']
+            'relaxation': ['thư giãn', 'nghỉ ngơi', 'xả stress', 'mệt mỏi', 'căng thẳng'],
+            'celebration': ['kỷ niệm', 'sinh nhật', 'cưới', 'thành công', 'ăn mừng'],
+            'business': ['công tác', 'meeting', 'đối tác', 'dự án', 'work'],
+            'adventure': ['khám phá', 'trải nghiệm', 'mạo hiểm', 'mới lạ', 'phiêu lưu'],
+            'healing': ['chữa lành', 'tĩnh tâm', 'thiền', 'suy nghĩ', 'chia tay'],
+            'family': ['gia đình', 'con nhỏ', 'trẻ em', 'bố mẹ', 'ông bà'],
+            'romance': ['lãng mạn', 'người yêu', 'cặp đôi', 'tình nhân', 'anniversary']
         }
         
         for need, patterns in need_patterns.items():
@@ -127,15 +127,15 @@ class AdvancedSentimentAnalyzer:
         return needs if needs else ['general_travel']
     
     def _detect_special_scenario(self, text):
-        """Ph�t hi?n c�c t�nh hu?ng ??c bi?t c?n x? l�"""
+        """Phát hiện các tình huống đặc biệt cần xử lý"""
         text_lower = text.lower()
         
         special_scenarios = {
-            'room_unavailable': ['h?t ph�ng', 'h?t ch?', 'full ph�ng', '??y ph�ng', 'kh�ng c�n ph�ng', 'm?t tiu'],
-            'price_concern': ['??t qu�', 'm?c qu�', 'gi� cao', 'over budget', '??t ??'],
-            'quality_concern': ['s?ch kh�ng', 'v? sinh', 'b?n', 'd?', '??m b?o', 'cam k?t'],
-            'safety_concern': ['an to�n kh�ng', 'c� an ninh', 'nguy hi?m', 'safe', 'security'],
-            'urgent_booking': ['g?p l?m', 'ngay b�y gi?', 'kh?n c?p', 'c?n ngay', 'l?p t?c']
+            'room_unavailable': ['hết phòng', 'hết chỗ', 'full phòng', 'đầy phòng', 'không còn phòng', 'mất tiu'],
+            'price_concern': ['đắt quá', 'mắc quá', 'giá cao', 'over budget', 'đắt đỏ'],
+            'quality_concern': ['sạch không', 'vệ sinh', 'bẩn', 'dơ', 'đảm bảo', 'cam kết'],
+            'safety_concern': ['an toàn không', 'có an ninh', 'nguy hiểm', 'safe', 'security'],
+            'urgent_booking': ['gấp lắm', 'ngay bây giờ', 'khẩn cấp', 'cần ngay', 'lập tức']
         }
         
         for scenario, keywords in special_scenarios.items():
@@ -145,32 +145,32 @@ class AdvancedSentimentAnalyzer:
         return None
     
     def analyze_quality_concerns(self, user_message):
-        """Ph�n t�ch c�c lo l?ng v? ch?t l??ng d?ch v?"""
+        """Phân tích các lo lắng về chất lượng dịch vụ"""
         text_lower = user_message.lower()
         
         quality_concerns = {
             'cleanliness': {
-                'keywords': ['s?ch kh�ng', 'v? sinh', 'b?n', 'd?', 'clean', 'hygiene'],
+                'keywords': ['sạch không', 'vệ sinh', 'bẩn', 'dơ', 'clean', 'hygiene'],
                 'focus': 'housekeeping_standards',
                 'urgency': 'medium'
             },
             'safety': {
-                'keywords': ['an to�n kh�ng', 'c� an ninh', 'nguy hi?m', 'safe', 'security'],
+                'keywords': ['an toàn không', 'có an ninh', 'nguy hiểm', 'safe', 'security'],
                 'focus': 'safety_measures', 
                 'urgency': 'high'
             },
             'service_quality': {
-                'keywords': ['nh�n vi�n t?t kh�ng', 'd?ch v?', 'ph?c v?', 'service', 'staff'],
+                'keywords': ['nhân viên tốt không', 'dịch vụ', 'phục vụ', 'service', 'staff'],
                 'focus': 'service_standards',
                 'urgency': 'medium'
             },
             'facility_condition': {
-                'keywords': ['h? b?i s?ch', 'ph�ng c?', 'thi?t b?', 'facility', 'condition'],
+                'keywords': ['hồ bơi sạch', 'phòng cũ', 'thiết bị', 'facility', 'condition'],
                 'focus': 'maintenance',
                 'urgency': 'medium'
             },
             'direct_guarantee': {
-                'keywords': ['c� ??m b?o kh�ng', 'b?n ??m b?o', 'cam k?t', 'ch?c ch?n kh�ng'],
+                'keywords': ['có đảm bảo không', 'bạn đảm bảo', 'cam kết', 'chắc chắn không'],
                 'focus': 'accountability',
                 'urgency': 'high'
             }
