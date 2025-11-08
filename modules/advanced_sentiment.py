@@ -1,60 +1,26 @@
-# modules/advanced_sentiment.py
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
-import torch
 import re
 from collections import Counter
 
 class AdvancedSentimentAnalyzer:
     def __init__(self):
-        try:
-            self.sentiment_analyzer = pipeline(
-                "sentiment-analysis",
-                model="nlptown/bert-base-multilingual-uncased-sentiment",
-                tokenizer="nlptown/bert-base-multilingual-uncased-sentiment"
-            )
-            
-            self.emotion_classifier = pipeline(
-                "text-classification",
-                model="j-hartmann/emotion-english-distilroberta-base", 
-                return_all_scores=True
-            )
-        except:
-            # Fallback to simple analyzer if models not available
-            self.sentiment_analyzer = None
-            self.emotion_classifier = None
+        self.sentiment_analyzer = None
+        self.emotion_classifier = None
+        
+        # Không load model AI trên production để tránh lỗi
+        # Chỉ sử dụng phân tích đơn giản
+        print("Using simple sentiment analysis for production")
     
     def analyze_user_state(self, user_message):
-        """Phân tích cảm xúc và trạng thái người dùng"""
-        if self.sentiment_analyzer is None:
-            return self._simple_analysis(user_message)
-            
-        try:
-            # Sentiment analysis
-            sentiment_result = self.sentiment_analyzer(user_message)[0]
-            
-            # Emotion detection
-            emotion_results = self.emotion_classifier(user_message)[0]
-            top_emotion = max(emotion_results, key=lambda x: x['score'])
-            
-            return {
-                'sentiment': sentiment_result['label'],
-                'sentiment_score': sentiment_result['score'],
-                'emotion': top_emotion['label'],
-                'emotion_score': top_emotion['score'],
-                'urgency': self._detect_urgency(user_message),
-                'needs': self._extract_needs(user_message),
-                'special_scenario': self._detect_special_scenario(user_message)
-            }
-        except:
-            return self._simple_analysis(user_message)
+        """Phân tích cảm xúc và trạng thái người dùng - Production version"""
+        return self._simple_analysis(user_message)
     
     def _simple_analysis(self, text):
         """Phân tích đơn giản khi không có model"""
         text_lower = text.lower()
         
         # Basic sentiment detection
-        positive_words = ['vui', 'tốt', 'tuyệt', 'thích', 'happy', 'good']
-        negative_words = ['buồn', 'tệ', 'xấu', 'ghét', 'sad', 'bad', 'huhu', 'tiếc']
+        positive_words = ['vui', 'tốt', 'tuyệt', 'thích', 'happy', 'good', 'cám ơn', 'thanks']
+        negative_words = ['buồn', 'tệ', 'xấu', 'ghét', 'sad', 'bad', 'huhu', 'tiếc', 'không thích']
         
         positive_count = sum(1 for word in positive_words if word in text_lower)
         negative_count = sum(1 for word in negative_words if word in text_lower)
@@ -181,3 +147,4 @@ class AdvancedSentimentAnalyzer:
                 return concern, data
         
         return None, None
+
