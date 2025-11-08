@@ -16,16 +16,16 @@ class ContextAwareRecommender:
         self.context_embeddings = self._initialize_context_embeddings()
         
     def _initialize_context_embeddings(self):
-        """Kh?i t?o embeddings cho c�c ng? c?nh du l?ch"""
+        """Khởi tạo embeddings cho các ngữ cảnh du lịch"""
         contexts = {
-            'heartbreak_recovery': "bu?n t�nh c?m chia tay healing t�m h?n th?t t�nh c� ??n",
-            'business_trip': "c�ng t�c chuy�n nghi?p hi?u qu? meeting ??i t�c work",
-            'family_vacation': "gia ?�nh tr? em an to�n vui ch?i tr? nh?", 
-            'romantic_getaway': "l�ng m?n c?p ?�i ri�ng t? ??c bi?t t�nh nh�n",
-            'solo_adventure': "m?t m�nh kh�m ph� t? do tr?i nghi?m c� nh�n",
-            'stress_relief': "c?ng th?ng ngh? ng?i th? gi�n tr? li?u m?t m?i",
-            'celebration': "k? ni?m ?n m?ng party vui v? th�nh c�ng",
-            'workation': "l�m vi?c t? xa digital nomad wifi y�n t?nh"
+            'heartbreak_recovery': "buồn tình cảm chia tay healing tâm hồn thất tình cô đơn",
+            'business_trip': "công tác chuyên nghiệp hiệu quả meeting đối tác work",
+            'family_vacation': "gia đình trẻ em an toàn vui chơi trẻ nhỏ", 
+            'romantic_getaway': "lãng mạn cặp đôi riêng tư đặc biệt tình nhân",
+            'solo_adventure': "một mình khám phá tự do trải nghiệm cá nhân",
+            'stress_relief': "căng thẳng nghỉ ngơi thư giãn trị liệu mệt mỏi",
+            'celebration': "kỷ niệm ăn mừng party vui vẻ thành công",
+            'workation': "làm việc từ xa digital nomad wifi yên tĩnh"
         }
         
         if self.sentence_model:
@@ -34,7 +34,7 @@ class ContextAwareRecommender:
             return contexts
     
     def predict_travel_context(self, user_message, user_history=None):
-        """D? ?o�n ng? c?nh du l?ch"""
+        """Dự đoán ngữ cảnh du lịch"""
         if self.sentence_model is None:
             return self._simple_context_prediction(user_message)
             
@@ -46,7 +46,7 @@ class ContextAwareRecommender:
                 similarity = cosine_similarity([user_embedding], [context_embedding])[0][0]
                 similarities[context] = similarity
             
-            # L?y top 2 contexts
+            # Lấy top 2 contexts
             top_contexts = sorted(similarities.items(), key=lambda x: x[1], reverse=True)[:2]
             
             return {
@@ -58,16 +58,16 @@ class ContextAwareRecommender:
             return self._simple_context_prediction(user_message)
     
     def _simple_context_prediction(self, user_message):
-        """D? ?o�n ng? c?nh ??n gi?n"""
+        """Dự đoán ngữ cảnh đơn giản"""
         text_lower = user_message.lower()
         
         context_keywords = {
-            'heartbreak_recovery': ['chia tay', 'bu?n', 'th?t t�nh', 'c� ??n', 't�nh c?m'],
-            'business_trip': ['c�ng t�c', 'meeting', '??i t�c', 'work', 'business'],
-            'family_vacation': ['gia ?�nh', 'con nh?', 'tr? em', 'b? m?'],
-            'romantic_getaway': ['l�ng m?n', 'ng??i y�u', 'c?p ?�i', 't�nh nh�n'],
-            'solo_adventure': ['m?t m�nh', 'solo', '?i ri�ng', 'c� nh�n'],
-            'workation': ['l�m vi?c', 'wifi', 'y�n t?nh', 'remote work']
+            'heartbreak_recovery': ['chia tay', 'buồn', 'thất tình', 'cô đơn', 'tình cảm'],
+            'business_trip': ['công tác', 'meeting', 'đối tác', 'work', 'business'],
+            'family_vacation': ['gia đình', 'con nhỏ', 'trẻ em', 'bố mẹ'],
+            'romantic_getaway': ['lãng mạn', 'người yêu', 'cặp đôi', 'tình nhân'],
+            'solo_adventure': ['một mình', 'solo', 'đi riêng', 'cá nhân'],
+            'workation': ['làm việc', 'wifi', 'yên tĩnh', 'remote work']
         }
         
         scores = {context: 0 for context in context_keywords.keys()}
@@ -92,7 +92,7 @@ class ContextAwareRecommender:
             }
     
     def generate_context_specific_suggestions(self, user_context, hotels_df):
-        """T?o ?? xu?t d?a tr�n ng? c?nh"""
+        """Tạo đề xuất dựa trên ngữ cảnh"""
         context_recommendations = {
             'heartbreak_recovery': {
                 'priority_features': ['spa', 'sea_view', 'quiet', 'nature', 'view'],
