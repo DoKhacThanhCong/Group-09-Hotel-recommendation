@@ -706,16 +706,3 @@ def init_chatbot_routes(app):
             return jsonify(response_data)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
-
-    @app.route('/hotel/<hotel_name>')
-    def hotel_detail(hotel_name):
-        # Decode hotel name
-        decoded_name = hotel_name.replace('%20', ' ')
-        
-        if base_data is not None:
-            hotel = base_data[base_data['name'] == decoded_name]
-            if not hotel.empty:
-                hotel_info = hotel.iloc[0].to_dict()
-                return render_template('hotel_detail.html', hotel=hotel_info)
-        
-        return render_template('hotel_detail.html', hotel=None)
