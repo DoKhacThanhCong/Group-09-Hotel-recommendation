@@ -13,13 +13,13 @@ class AIChatbotEngine:
         self.conversation_memory = {}
     
     def process_user_message(self, user_id, message, conversation_history=None):
-        """X? l� tin nh?n v?i AI n�ng cao"""
-        # Ph�n t�ch ?a chi?u
+        """Xử lý tin nhắn với AI nâng cao"""
+        # Phân tích đa chiều
         sentiment_analysis = self.sentiment_analyzer.analyze_user_state(message)
         context_prediction = self.context_recommender.predict_travel_context(message)
         personality_profile = self.personality_analyzer.analyze_personality_from_text(message)
         
-        # T?ng h?p insights
+        # Tổng hợp insights
         user_insights = {
             'sentiment': sentiment_analysis,
             'context': context_prediction,
@@ -28,12 +28,12 @@ class AIChatbotEngine:
             'special_scenario': sentiment_analysis.get('special_scenario')
         }
         
-        # L?u v�o memory
+        # Lưu vào memory
         if user_id not in self.conversation_memory:
             self.conversation_memory[user_id] = []
         self.conversation_memory[user_id].append(user_insights)
         
-        # T?o ph?n h?i th�ng minh
+        # Tạo phản hồi thông minh
         response = self._generate_ai_response(user_insights, message)
         
         return {
@@ -43,28 +43,28 @@ class AIChatbotEngine:
         }
     
     def _generate_ai_response(self, insights, original_message):
-        """T?o ph?n h?i AI th�ng minh"""
+        """Tạo phản hồi AI thông minh"""
         sentiment = insights['sentiment']['sentiment']
         emotion = insights['sentiment']['emotion']
         primary_context = insights['context']['primary_context']
         
         # Emotional response mapping
         emotional_responses = {
-            'sadness': "M�nh th?y b?n ?ang c� ch�t bu?n. ?�i khi m?t chuy?n ?i nh? c� th? gi�p t�m tr?ng t?t h?n ??y ??",
-            'joy': "Tuy?t v?i! Ni?m vui c?a b?n l�m m�nh c?ng th?y ph?n kh�ch ??",
-            'anger': "M�nh hi?u c?m gi�c b?c b?i n�y. M?t kh�ng gian y�n t?nh c� th? gi�p b?n l?y l?i c�n b?ng ??",
-            'fear': "??ng lo l?ng qu�, m�nh s? gi�p b?n t�m m?t n?i th?t an to�n v� tho?i m�i ???",
-            'surprise': "�i th� v? qu�! ?? Chuy?n ?i b?t ng? th??ng mang l?i nhi?u tr?i nghi?m ?�ng nh?!",
-            'disgust': "M�nh hi?u c?m gi�c kh� ch?u ?� ?? M?t kh�ng gian trong l�nh s? gi�p b?n refresh tinh th?n!",
-            'neutral': "R?t vui ???c h? tr? b?n! ??"
+            'sadness': "Mình thấy bạn đang có chút buồn. Đôi khi một chuyến đi nhỏ có thể giúp tâm trạng tốt hơn đấy 💫",
+            'joy': "Tuyệt vời! Niềm vui của bạn làm mình cũng thấy phấn khích 🎉",
+            'anger': "Mình hiểu cảm giác bức bối này. Một không gian yên tĩnh có thể giúp bạn lấy lại cân bằng 🌿",
+            'fear': "Đừng lo lắng quá, mình sẽ giúp bạn tìm một nơi thật an toàn và thoải mái 🛡️",
+            'surprise': "Ôi thú vị quá! 🤩 Chuyến đi bất ngờ thường mang lại nhiều trải nghiệm đáng nhớ!",
+            'disgust': "Mình hiểu cảm giác khó chịu đó 🍃 Một không gian trong lành sẽ giúp bạn refresh tinh thần!",
+            'neutral': "Rất vui được hỗ trợ bạn! 😊"
         }
         
         # Context-based recommendations
         context_suggestions = {
-            'heartbreak_recovery': "M�nh g?i � nh?ng n?i c� kh�ng gian healing, view ??p gi�p t�m h?n nh? nh�ng h?n ??",
-            'business_trip': "Cho chuy?n c�ng t�c, quan tr?ng l� ti?n nghi v� v? tr� thu?n l?i ??",
-            'solo_adventure': "?i m?t m�nh th?t t? do! B?n s? c� kh�ng gian ri�ng v� nh?ng tr?i nghi?m m?i ??",
-            'workation': "Perfect cho workation! M�nh s? t�m n?i c� wifi t?t v� kh�ng gian l�m vi?c tho?i m�i ??"
+            'heartbreak_recovery': "Mình gợi ý những nơi có không gian healing, view đẹp giúp tâm hồn nhẹ nhàng hơn 🌊",
+            'business_trip': "Cho chuyến công tác, quan trọng là tiện nghi và vị trí thuận lợi 🏢",
+            'solo_adventure': "Đi một mình thật tự do! Bạn sẽ có không gian riêng và những trải nghiệm mới 🎒",
+            'workation': "Perfect cho workation! Mình sẽ tìm nơi có wifi tốt và không gian làm việc thoải mái 💻"
         }
         
         # Build intelligent response
@@ -80,7 +80,7 @@ class AIChatbotEngine:
         
         # Personality-based suggestion
         personality_type = insights['personality']['personality_type']
-        response_parts.append(f"V?i phong c�ch {personality_type}, m�nh ngh? b?n s? th�ch:")
+        response_parts.append(f"Với phong cách {personality_type}, mình nghĩ bạn sẽ thích:")
         
         # Add specific recommendations based on AI analysis
         response_parts.extend(self._get_personalized_suggestions(insights))
@@ -88,27 +88,27 @@ class AIChatbotEngine:
         return "\n\n".join(response_parts)
     
     def _get_personalized_suggestions(self, insights):
-        """?? xu?t c� nh�n h�a d?a tr�n ph�n t�ch AI"""
+        """Đề xuất cá nhân hóa dựa trên phân tích AI"""
         suggestions = []
         
-        # D?a tr�n sentiment
+        # Dựa trên sentiment
         if insights['sentiment']['emotion'] in ['sadness', 'fear']:
-            suggestions.append("� N?i y�n t?nh, view thi�n nhi�n gi�p th? gi�n")
-            suggestions.append("� Kh�ch s?n c� spa v� d?ch v? wellness")
+            suggestions.append("• Nơi yên tĩnh, view thiên nhiên giúp thư giãn")
+            suggestions.append("• Khách sạn có spa và dịch vụ wellness")
         
-        # D?a tr�n personality
+        # Dựa trên personality
         personality = insights['personality']['dominant_traits']
         if 'extroverted' in personality:
-            suggestions.append("� Khu v?c c� ho?t ??ng social v� giao l?u")
+            suggestions.append("• Khu vực có hoạt động social và giao lưu")
         if 'introverted' in personality:
-            suggestions.append("� Kh�ng gian ri�ng t?, �t ?�ng ?�c")
+            suggestions.append("• Không gian riêng tư, ít đông đúc")
         if 'wellness_focused' in personality:
-            suggestions.append("� D?ch v? yoga, thi?n v� ch?m s�c s?c kh?e")
+            suggestions.append("• Dịch vụ yoga, thiền và chăm sóc sức khỏe")
         
-        return suggestions if suggestions else ["� Kh�ch s?n c� rating cao v� d?ch v? t?t"]
+        return suggestions if suggestions else ["• Khách sạn có rating cao và dịch vụ tốt"]
     
     def _get_recommendation_strategy(self, insights):
-        """X�c ??nh chi?n l??c ?? xu?t"""
+        """Xác định chiến lược đề xuất"""
         context = insights['context']['primary_context']
         emotion = insights['sentiment']['emotion']
         
