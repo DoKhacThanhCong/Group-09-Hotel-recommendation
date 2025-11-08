@@ -5,16 +5,16 @@ from collections import Counter
 class PersonalityAnalyzer:
     def __init__(self):
         self.personality_traits = {
-            'extroverted': ['party', 'social', 'people', 'friends', 'fun', 'giao l?u', 's�i ??ng'],
-            'introverted': ['quiet', 'alone', 'peaceful', 'reading', 'nature', 'y�n t?nh', 'm?t m�nh'],
-            'adventurous': ['adventure', 'explore', 'new', 'challenge', 'risk', 'kh�m ph�', 'm?o hi?m'],
-            'luxury_seeker': ['luxury', 'premium', 'exclusive', 'VIP', 'designer', 'sang tr?ng', 'cao c?p'],
-            'budget_conscious': ['budget', 'save', 'cheap', 'affordable', 'value', 'ti?t ki?m', 'gi� r?'],
-            'wellness_focused': ['wellness', 'yoga', 'meditation', 'health', 'detox', 's?c kh?e', 'thi?n']
+            'extroverted': ['party', 'social', 'people', 'friends', 'fun', 'giao lưu', 'sôi động'],
+            'introverted': ['quiet', 'alone', 'peaceful', 'reading', 'nature', 'yên tĩnh', 'một mình'],
+            'adventurous': ['adventure', 'explore', 'new', 'challenge', 'risk', 'khám phá', 'mạo hiểm'],
+            'luxury_seeker': ['luxury', 'premium', 'exclusive', 'VIP', 'designer', 'sang trọng', 'cao cấp'],
+            'budget_conscious': ['budget', 'save', 'cheap', 'affordable', 'value', 'tiết kiệm', 'giá rẻ'],
+            'wellness_focused': ['wellness', 'yoga', 'meditation', 'health', 'detox', 'sức khỏe', 'thiền']
         }
     
     def analyze_personality_from_text(self, text):
-        """Ph�n t�ch t�nh c�ch t? v?n b?n"""
+        """Phân tích tính cách từ văn bản"""
         words = re.findall(r'\w+', text.lower())
         word_freq = Counter(words)
         
@@ -37,7 +37,7 @@ class PersonalityAnalyzer:
         }
     
     def _determine_personality_type(self, dominant_traits):
-        """X�c ??nh lo?i t�nh c�ch t?ng qu�t"""
+        """Xác định loại tính cách tổng quát"""
         if not dominant_traits:
             return 'Balanced Traveler'
             
