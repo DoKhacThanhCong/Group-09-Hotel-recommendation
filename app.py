@@ -54,7 +54,7 @@ def get_ai_response(message):
         return "🤖 Tôi là AI trợ lý du lịch. Hiện tôi có thể giúp bạn tìm khách sạn, so sánh giá cả, và tư vấn địa điểm du lịch. Bạn cần hỗ trợ gì ạ?"
     
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
         Bạn là 'Travel Buddy AI' - trợ lý du lịch thân thiện bằng tiếng Việt. 
         Giọng văn vui vẻ, gần gũi, sử dụng từ ngữ thân mật.
@@ -636,5 +636,6 @@ def update_hotel_status(name, status):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
