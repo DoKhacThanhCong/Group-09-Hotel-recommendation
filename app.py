@@ -126,7 +126,6 @@ def initialize_files():
         print(f"⚠️ Lỗi khi khởi tạo file: {e}")
         # Fallback đến thư mục tạm
         temp_dir = tempfile.gettempdir()
-        global BOOKINGS_CSV
         BOOKINGS_CSV = os.path.join(temp_dir, "bookings.csv")
 
 # Gọi hàm khởi tạo
@@ -637,4 +636,5 @@ def update_hotel_status(name, status):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
