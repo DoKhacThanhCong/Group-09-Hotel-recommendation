@@ -99,7 +99,7 @@ mail = Mail(app)
 
 # ==================== KHỞI TẠO FILE ====================
 def initialize_files():
-    """Khởi tạo các file CSV nếu chưa tồn tại"""
+    global BOOKINGS_CSV
     try:
         # Tạo file bookings nếu chưa có
         if not os.path.exists(BOOKINGS_CSV):
@@ -637,3 +637,4 @@ def update_hotel_status(name, status):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
