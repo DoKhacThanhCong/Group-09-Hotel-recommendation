@@ -66,11 +66,13 @@
 <body>
     <h2>🔍 Tra cứu lịch sử đặt phòng</h2>
 
-    <form method="POST" action="/history">
-        <label>Nhập email của bạn:</label><br>
-        <input type="email" name="email" required placeholder="vd: ban@gmail.com" value="{{ email }}">
-        <input type="submit" value="Xem lịch sử">
-    </form>
+    <h2>
+        {% if user.rank == 'Admin' %}
+        📊 TẤT CẢ LỊCH SỬ ĐẶT PHÒNG
+        {% else %}
+        📜 Lịch sử đặt phòng của {{ user.username }}
+        {% endif %}
+    </h2>
 
     {% if bookings %}
     <table>

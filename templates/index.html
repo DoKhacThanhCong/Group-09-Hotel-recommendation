@@ -197,11 +197,21 @@
                     <li class="nav-item"><a class="nav-link" href="tel:+84987654321">📞 0987 654 321</a></li>
 
                     {% if not session.get('user') %}
-                    <li class="nav-item"><a class="nav-link btn btn-outline-light ms-2" href="/login">Đăng nhập</a></li>
-                    <li class="nav-item"><a class="nav-link btn btn-light text-dark ms-2" href="/register">Đăng ký</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-light ms-2" href="/login">Đăng nhập</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-light text-dark ms-2" href="/register">Đăng ký</a>
+                    </li>
                     {% else %}
-                    <li class="nav-item"><span class="nav-link">Xin chào, {{ session.user.username }}</span></li>
-                    <li class="nav-item"><a class="nav-link btn btn-outline-danger ms-2" href="/logout">Đăng xuất</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('profile') }}">
+                            👤 Xin chào, {{ session['user']['username'] }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-danger ms-2" href="/logout">Đăng xuất</a>
+                    </li>
                     {% endif %}
                 </ul>
             </div>
