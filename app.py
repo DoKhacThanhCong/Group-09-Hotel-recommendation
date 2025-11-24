@@ -1,5 +1,6 @@
 import os
 import re
+import ast
 import tempfile
 from datetime import datetime
 import pandas as pd
@@ -15,10 +16,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"
 
+USERS_CSV = "data/users.csv"
+BOOKINGS_CSV = "bookings.csv"
+
 # -------------------------
 # USER DATABASE (tạm thời dict)
 # -------------------------
 users_db = {}
+bookings_db = []
 
 # -------------------------
 # HÀM HỖ TRỢ
@@ -36,6 +41,49 @@ def get_user_rank(total_spent):
 def get_discounted_price(rank, base_price):
     discount = {"Đồng": 0, "Bạc": 0.05, "Vàng": 0.1, "Bạch kim": 0.2}
     return int(base_price * (1 - discount.get(rank, 0)))
+
+# -------------------------
+# HỖ TRỢ USER CSV
+# -------------------------
+def load_users():
+    # Nếu file chưa tồn tại, tạo DataFrame rỗng với header chuẩn
+    if not os.path.exists(USERS_CSV):
+        df = pd.DataFrame(columns=[
+            "username","password","full_name","dob","gender","email","phone","total_spent","history"
+        ])
+        df.to_csv(USERS_CSV, index=False, encoding="utf-8-sig")
+    else:
+        df = pd.read_csv(USERS_CSV, encoding="utf-8-sig")
+        # Nếu không có cột username, tạo DataFrame rỗng
+        if "username" not in df.columns:
+            df = pd.DataFrame(columns=[
+                "username","password","full_name","dob","gender","email","phone","total_spent","history"
+            ])
+            df.to_csv(USERS_CSV, index=False, encoding="utf-8-sig")
+
+    # Chuyển DataFrame thành dict theo username
+    users = df.set_index('username').T.to_dict()
+
+    # 🔹 Chuyển 'history' từ string -> list
+    for u, data in users.items():
+        if 'history' in data:
+            try:
+                data['history'] = ast.literal_eval(data['history'])
+            except:
+                data['history'] = []
+        else:
+            data['history'] = []
+
+    return users
+
+def save_users(users):
+    df = pd.DataFrame(users).T
+    # 🔹 Chuyển 'history' từ list -> string trước khi lưu CSV
+    df['history'] = df['history'].apply(str)
+    df.to_csv(USERS_CSV, index_label='username', encoding="utf-8-sig")
+
+# Load user database khi start app
+users_db = load_users()
 
 # -------------------------
 # ROUTES
@@ -63,6 +111,7 @@ def register():
             flash("Tài khoản đã tồn tại!", "danger")
             return redirect(url_for("register"))
 
+        # Thêm user vào dict
         users_db[username] = {
             "password": generate_password_hash(request.form["password"]),
             "full_name": request.form.get("fullname", ""),
@@ -73,8 +122,14 @@ def register():
             "total_spent": 0,
             "history": []
         }
+
+        # Ghi lại CSV
+        df = pd.DataFrame(users_db).T  # Chuyển dict sang DataFrame
+        df.to_csv(USERS_CSV, index_label="username", encoding="utf-8-sig")
+
         flash("Đăng ký thành công! Hãy đăng nhập.", "success")
         return redirect(url_for("login"))
+
     return render_template("register.html")
 
 # Đăng nhập
@@ -85,12 +140,16 @@ def login():
         password = request.form["password"]
         user = users_db.get(username)
         if user and check_password_hash(user["password"], password):
-            session["user"] = username
-            session["user_rank"] = get_user_rank(user["total_spent"])
+            session["user"] = {
+                "username": username,
+                "email": user["email"],
+                "rank": get_user_rank(user["total_spent"])
+            }
             flash("Đăng nhập thành công!", "success")
             return redirect(url_for("profile"))
         flash("Sai tài khoản hoặc mật khẩu!", "danger")
         return redirect(url_for("login"))
+
     return render_template("login.html")
 
 # Đăng xuất
@@ -107,17 +166,42 @@ def profile():
         flash("Bạn cần đăng nhập để xem thông tin.", "danger")
         return redirect(url_for("login"))
 
-    username = session["user"]
-    user = users_db[username]
+    user_session = session["user"]
+    username = user_session["username"]
+    user_data = users_db.get(username, {})
 
-    # Tính tuổi từ dob
-    dob = user.get("dob","")
+    # Tính tuổi
+    dob = user_data.get("dob", "")
     age = "-"
     if dob:
         birth = datetime.strptime(dob, "%Y-%m-%d")
         age = int((datetime.now() - birth).days / 365.25)
 
-    return render_template("profile.html", user=user, age=age, user_rank=session.get("user_rank","Đồng"))
+    # --- Lấy lịch sử đặt phòng ---
+    if os.path.exists(BOOKINGS_CSV):
+        df = pd.read_csv(BOOKINGS_CSV, encoding="utf-8-sig")
+        user_history = df[df["email"] == user_data.get("email", "")]
+        history = [
+            {
+                "name": row["hotel_name"],
+                "price": "{:,.0f}".format(float(row["price"])),
+                "date": row["booking_time"]
+            } for idx, row in user_history.iterrows()
+        ]
+    else:
+        history = []
+
+    # --- Truyền total_spent vào template ---
+    total_spent = user_data.get("total_spent", 0)
+
+    return render_template(
+        "profile.html",
+        user=user_data,
+        age=age,
+        user_rank=user_session.get("rank", "Đồng"),
+        total_spent=total_spent,
+        history=history
+    )
 
 # Đặt phòng
 @app.route("/book/<hotel_name>/<int:price>", methods=["POST"])
@@ -442,6 +526,7 @@ def hotel_detail(name):
         return "<h3>Không tìm thấy khách sạn!</h3>", 404
 
     hotel = map_hotel_row(hotel_data.iloc[0].to_dict())
+    user_rank = session.get('user', {}).get('rank', 'Đồng')
     reviews_df_local = read_csv_safe(REVIEWS_CSV)
     hotel_reviews = reviews_df_local[reviews_df_local['hotel_name'] == name].to_dict(orient='records')
 
@@ -458,9 +543,18 @@ def hotel_detail(name):
     }
 
     rooms = [
-        {"type": "Phòng nhỏ", "price": round(float(hotel.get('price', 0)) * 1.0)},
-        {"type": "Phòng đôi", "price": round(float(hotel.get('price', 0)) * 1.5)},
-        {"type": "Phòng tổng thống", "price": round(float(hotel.get('price', 0)) * 2.5)},
+        {
+            "type": "Phòng nhỏ",
+            "price": get_discounted_price(user_rank, round(float(hotel.get('price', 0)) * 1.0))
+        },
+        {
+            "type": "Phòng đôi",
+            "price": get_discounted_price(user_rank, round(float(hotel.get('price', 0)) * 1.5))
+        },
+        {
+            "type": "Phòng tổng thống",
+            "price": get_discounted_price(user_rank, round(float(hotel.get('price', 0)) * 2.5))
+        },
     ]
 
     # === THÊM GALLERY VÀO KHÁCH SẠN ===
@@ -499,41 +593,30 @@ def add_review(name):
 @app.route('/booking/<name>/<room_type>', methods=['GET', 'POST'])
 def booking(name, room_type):
     hotels_df = read_csv_safe(HOTELS_CSV)
-    if 'rooms_available' not in hotels_df.columns:
-        hotels_df['rooms_available'] = 0
-    hotels_df['rooms_available'] = hotels_df['rooms_available'].astype(int)
-    if 'status' not in hotels_df.columns:
-        hotels_df['status'] = hotels_df['rooms_available'].apply(lambda x: 'còn' if int(x) > 0 else 'hết')
-    else:
-        hotels_df['status'] = hotels_df['rooms_available'].apply(lambda x: 'còn' if int(x) > 0 else 'hết')
+    hotels_df['rooms_available'] = hotels_df.get('rooms_available', 0).astype(int)
+    hotels_df['status'] = hotels_df['rooms_available'].apply(lambda x: 'còn' if int(x) > 0 else 'hết')
 
     hotel_data = hotels_df[hotels_df['name'] == name]
-
     if hotel_data.empty:
         return "<h3>Không tìm thấy khách sạn!</h3>", 404
 
     hotel = map_hotel_row(hotel_data.iloc[0].to_dict())
-
-    # --- 🟢 LẤY STATUS MỚI NHẤT TỪ CSV ---
-    hotel_row = hotels_df[hotels_df['name'] == name].iloc[0]
-    hotel['status'] = 'còn' if int(hotel_row['rooms_available']) > 0 else 'hết'
+    hotel['status'] = 'còn' if int(hotel_data.iloc[0]['rooms_available']) > 0 else 'hết'
     is_available = hotel['status'].lower() == 'còn'
     flash(f"Trạng thái phòng hiện tại: {hotel['status']}", "info")
 
-    # --- 🛑 Kiểm tra trạng thái phòng ---
-    if not is_available:
-        flash("Khách sạn này hiện đã hết phòng. Vui lòng chọn khách sạn khác.", "danger")
-        #return redirect(url_for('home'))  # chuyển về trang chủ
-
-    # Xử lý POST đặt phòng
     if request.method == 'POST':
+        user_rank = session['user'].get('rank', 'Đồng')
+        discounted_price = get_discounted_price(user_rank, hotel.get('price', 0))
+
         info = {
+            "username": session['user']['username'],
             "hotel_name": name,
             "room_type": room_type,
-            "price": float(request.form.get('price', hotel.get('price', 0))),
+            "price": float(request.form.get('price', discounted_price)),
             "user_name": request.form['fullname'].strip(),
             "phone": request.form['phone'].strip(),
-            "email": request.form.get('email', '').strip(),
+            "email": session['user']['email'],
             "num_adults": max(int(request.form.get('adults', 1)), 1),
             "num_children": max(int(request.form.get('children', 0)), 0),
             "checkin_date": request.form['checkin'],
@@ -543,7 +626,7 @@ def booking(name, room_type):
             "status": "Chờ xác nhận"
         }
 
-        # Ghi CSV đặt phòng
+        # --- 1. Lưu booking vào CSV ---
         try:
             df = pd.read_csv(BOOKINGS_CSV, encoding="utf-8-sig")
         except FileNotFoundError:
@@ -551,49 +634,66 @@ def booking(name, room_type):
         df = pd.concat([df, pd.DataFrame([info])], ignore_index=True)
         df.to_csv(BOOKINGS_CSV, index=False, encoding="utf-8-sig")
 
-        # Gửi email khách
-        if info["email"]:
-            try:
-                msg_user = Message(
-                    subject="Xác nhận đặt phòng - Hotel Pinder",
-                    recipients=[info["email"]]
-                )
-                msg_user.html = f"""..."""  # giữ nguyên nội dung email
-                mail.send(msg_user)
-            except Exception as e:
-                print(f"⚠️ Lỗi gửi email cho khách: {e}")
+        # --- 2. Cập nhật tổng chi tiêu và history trong users_db + users.csv ---
+        username = session['user']['username']
+        if username in users_db:
+            users_db[username]['total_spent'] += info['price']
+            users_db[username]['history'].append(info)
 
-        # Gửi email admin
+            # Cập nhật CSV users
+            df_users = pd.DataFrame(users_db).T
+            df_users.to_csv(USERS_CSV, index_label='username', encoding='utf-8-sig')
+
+            # Cập nhật session rank ngay lập tức
+            session['user']['rank'] = get_user_rank(users_db[username]['total_spent'])
+
+        # --- 3. Gửi email ---
         try:
-            msg_admin = Message(
-                subject=f"🔔 Đơn đặt phòng mới tại {info['hotel_name']}",
-                recipients=["hotelpinder@gmail.com"]
-            )
-            msg_admin.html = f"""..."""  # giữ nguyên nội dung email admin
+            if info["email"]:
+                msg_user = Message(subject="Xác nhận đặt phòng - Hotel Pinder",
+                                   recipients=[info["email"]])
+                msg_user.html = f"""..."""
+                mail.send(msg_user)
+        except Exception as e:
+            print(f"Lỗi gửi email cho khách: {e}")
+
+        try:
+            msg_admin = Message(subject=f"Đơn đặt phòng mới tại {info['hotel_name']}",
+                                recipients=["hotelpinder@gmail.com"])
+            msg_admin.html = f"""..."""
             mail.send(msg_admin)
         except Exception as e:
-            print(f"⚠️ Lỗi gửi email admin: {e}")
+            print(f"Lỗi gửi email admin: {e}")
 
+        flash("Đặt phòng thành công!", "success")
         return render_template('success.html', info=info)
 
-    return render_template('booking.html', hotel=hotel, room_type=room_type, is_available=is_available)
-
-
+    # GET request, hiển thị form booking
+    return render_template('booking.html', hotel=hotel, room_type=room_type, 
+                       is_available=is_available, discounted_price=discounted_price)
 
 # === LỊCH SỬ ĐẶT PHÒNG ===
-@app.route('/history', methods=['GET', 'POST'])
+@app.route("/history")
 def booking_history():
-    bookings = []
-    email = ""
+    # Kiểm tra user đăng nhập
+    user = session.get("user")  # Lấy từ session
+    if not user:
+        flash("Bạn cần đăng nhập để xem lịch sử.", "danger")
+        return redirect(url_for("login"))
 
-    if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
-        if os.path.exists(BOOKINGS_CSV) and email:
-            df = pd.read_csv(BOOKINGS_CSV, encoding='utf-8-sig')
-            df['email'] = df['email'].astype(str).str.lower()
-            bookings = df[df['email'] == email].to_dict(orient='records')
+    is_admin = user.get("rank", "").lower() == "admin"
+    email = request.args.get("email") if is_admin else user["email"]
 
-    return render_template('history.html', bookings=bookings, email=email)
+    # Lọc bookings theo email
+    try:
+        df = pd.read_csv(BOOKINGS_CSV, encoding="utf-8-sig")
+    except FileNotFoundError:
+        df = pd.DataFrame()
+    
+    bookings = df[df['email'] == email].to_dict(orient="records") if not df.empty else []
+
+    # Truyền user vào template
+    return render_template("history.html", bookings=bookings, email=email, is_admin=is_admin, user=user)
 
 
 # === TRANG GIỚI THIỆU ===
@@ -607,10 +707,9 @@ def admin_login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
-        # ⚙️ Tài khoản admin cố định (có thể sửa)
         if username == "admin" and password == "123456":
             session['admin'] = True
-            flash("Đăng nhập thành công!", "success")
+            flash("Đăng nhập admin thành công!", "success")
             return redirect(url_for('admin_dashboard'))
         else:
             flash("Sai tài khoản hoặc mật khẩu!", "danger")
