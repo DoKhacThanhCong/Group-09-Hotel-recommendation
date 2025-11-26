@@ -918,6 +918,10 @@ except Exception as e:
     model = None # Đặt là None để kiểm tra sau
 # ------------------------
 
+@app.route('/ai_chat')
+def ai_chat():
+    return render_template('ai_chat_hotel.html')
+
 #  TẠO "CẦU NỐI" (API ENDPOINT) CHO AI CHAT
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
@@ -1614,4 +1618,5 @@ def google_search(query):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
