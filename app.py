@@ -7,6 +7,7 @@ import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_mail import Mail, Message   # nếu dùng mail
 from werkzeug.security import generate_password_hash, check_password_hash
+import google.generativeai as genai
 
 # -------------------------
 # Tạo app Flask
@@ -291,10 +292,6 @@ def destination(city):
     info["intro"] = read_intro(info["name"])
 
     return render_template("destination.html", info=info)
-
-
-# khởi tạo chatbot (nếu có)
-init_chatbot_routes(app)
 
 # -------------------------
 # ĐƯỜNG DẪN FILE (LINH HOẠT)
@@ -1617,3 +1614,4 @@ def google_search(query):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
