@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -119,6 +119,18 @@
             text-align: center;
             margin: 40px 0 30px;
         }
+
+        /* Sorting control small adjustments */
+        .sort-inline {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .sort-inline .form-label {
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -147,25 +159,43 @@
         <!-- Bộ lọc -->
         <form method="get" action="/recommend" class="filter-bar">
             <div class="row align-items-center g-3">
+                <!-- Changed: exact stars selection (select) -->
                 <div class="col-md-2">
-                    <label class="form-label">⭐ Sao tối thiểu</label>
-                    <input type="number" name="stars" min="1" max="5" class="form-control" placeholder="VD: 4">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">💰 Ngân sách (VND)</label>
-                    <input type="number" name="budget" class="form-control" placeholder="VD: 2000000">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Sắp xếp theo</label>
-                    <select name="sort" class="form-select">
-                        <option value="">-- Không --</option>
-                        <option value="asc">💵 Giá tăng dần</option>
-                        <option value="desc">💰 Giá giảm dần</option>
+                    <label class="form-label">⭐ Số sao</label>
+                    <select name="stars" id="stars-select" class="form-select">
+                        <option value="">-- Tất cả --</option>
+                        <option value="1" {% if request.args.get('stars') == '1' %}selected{% endif %}>1 sao</option>
+                        <option value="2" {% if request.args.get('stars') == '2' %}selected{% endif %}>2 sao</option>
+                        <option value="3" {% if request.args.get('stars') == '3' %}selected{% endif %}>3 sao</option>
+                        <option value="4" {% if request.args.get('stars') == '4' %}selected{% endif %}>4 sao</option>
+                        <option value="5" {% if request.args.get('stars') == '5' %}selected{% endif %}>5 sao</option>
                     </select>
                 </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">💰 Ngân sách (VND)</label>
+                    <input type="number" name="budget" class="form-control" placeholder="VD: 2000000" value="{{ request.args.get('budget','') }}">
+                </div>
+
+                <!-- Removed server-side sort control as requested -->
+
+                <!-- Client-side sorting control (kept) -->
+                <div class="col-md-3">
+                    <label class="form-label">Sắp xếp nhanh</label>
+                    <div class="sort-inline">
+                        <select id="client-sort" class="form-select">
+                            <option value="">-- Không --</option>
+                            <option value="price-asc">Giá tăng dần</option>
+                            <option value="price-desc">Giá giảm dần</option>
+                            <option value="stars-asc">Số sao tăng dần</option>
+                            <option value="stars-desc">Số sao giảm dần</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="col-md-3">
                     <label class="form-label">🏙️ Thành phố</label>
-                    <input type="text" name="location" class="form-control" placeholder="VD: Đà Nẵng">
+                    <input type="text" name="location" class="form-control" placeholder="VD: Đà Nẵng" value="{{ request.args.get('location','') }}">
                 </div>
                 <div class="col-md-2 text-center">
                     <button type="submit" class="btn btn-custom mt-4 px-4">🔍 Lọc</button>
@@ -174,9 +204,9 @@
         </form>
 
         <!-- Kết quả -->
-        <div class="row">
+        <div class="row" id="hotel-grid">
             {% for hotel in hotels %}
-            <div class="col-md-4 mb-4">
+            <div class="col-md-4 mb-4 hotel-card-wrap" data-price="{{ hotel.price }}" data-stars="{{ hotel.stars }}">
                 <div class="card h-100 shadow">
                     <img src="{{ hotel.image_url or hotel.image }}" class="card-img-top" alt="{{ hotel.name }}">
                     <div class="card-body">
@@ -205,6 +235,107 @@
         😢 Không tìm thấy khách sạn nào phù hợp với yêu cầu của bạn.
     </div>
     {% endif %}
+
+    <script>
+        (function() {
+            // Helper: parse price string to number (handles commas, currency symbols)
+            function parseNumber(value) {
+                if (value === null || value === undefined) return NaN;
+                if (typeof value === 'number') return value;
+                var s = String(value).replace(/[^\d\.\-]/g, '');
+                var n = parseFloat(s);
+                return isNaN(n) ? NaN : n;
+            }
+
+            // Sort hotel cards inside #hotel-grid by data attribute
+            function sortHotels(mode) {
+                var grid = document.getElementById('hotel-grid');
+                if (!grid) return;
+                var items = Array.prototype.slice.call(grid.querySelectorAll('.hotel-card-wrap'));
+                if (!mode) {
+                    // no client-side sort: keep current DOM order (server order)
+                    return;
+                }
+
+                items.sort(function(a, b) {
+                    if (mode === 'price-asc' || mode === 'price-desc') {
+                        var va = parseNumber(a.dataset.price);
+                        var vb = parseNumber(b.dataset.price);
+                        // push NaN to end for asc, to start for desc
+                        if (isNaN(va) && isNaN(vb)) return 0;
+                        if (isNaN(va)) return mode === 'price-asc' ? 1 : -1;
+                        if (isNaN(vb)) return mode === 'price-asc' ? -1 : 1;
+                        return mode === 'price-asc' ? va - vb : vb - va;
+                    } else if (mode === 'stars-asc' || mode === 'stars-desc') {
+                        var sa = parseNumber(a.dataset.stars);
+                        var sb = parseNumber(b.dataset.stars);
+                        if (isNaN(sa) && isNaN(sb)) return 0;
+                        if (isNaN(sa)) return mode === 'stars-asc' ? 1 : -1;
+                        if (isNaN(sb)) return mode === 'stars-asc' ? -1 : 1;
+                        return mode === 'stars-asc' ? sa - sb : sb - sa;
+                    }
+                    return 0;
+                });
+
+                // Re-append in sorted order
+                items.forEach(function(it) {
+                    grid.appendChild(it);
+                });
+            }
+
+            // Filter hotels by exact stars (client-side)
+            function filterByExactStars(value) {
+                var grid = document.getElementById('hotel-grid');
+                if (!grid) return;
+                var items = Array.prototype.slice.call(grid.querySelectorAll('.hotel-card-wrap'));
+                var v = (value === null || value === undefined) ? '' : String(value).trim();
+                if (!v) {
+                    // show all
+                    items.forEach(function(it) { it.style.display = ''; });
+                    return;
+                }
+                items.forEach(function(it) {
+                    var s = String(it.dataset.stars || '').trim();
+                    if (s === v) {
+                        it.style.display = '';
+                    } else {
+                        it.style.display = 'none';
+                    }
+                });
+            }
+
+            // Wire up client-side sort select
+            var clientSort = document.getElementById('client-sort');
+            if (clientSort) {
+                clientSort.addEventListener('change', function() {
+                    sortHotels(this.value);
+                });
+            }
+
+            // Wire up stars select for client-side exact filtering
+            var starsSelect = document.getElementById('stars-select');
+            if (starsSelect) {
+                // Apply filter on change (without preventing form submit)
+                starsSelect.addEventListener('change', function() {
+                    // First, if a client-side sort is selected, keep it applied
+                    var currentSort = clientSort ? clientSort.value : '';
+                    if (currentSort) {
+                        sortHotels(currentSort);
+                    }
+                    filterByExactStars(this.value);
+                });
+
+                // Apply initial filter on page load (in case server returned full list)
+                document.addEventListener('DOMContentLoaded', function() {
+                    // If the server already filtered by stars, the DOM likely already matches.
+                    // Still apply client-side filter to ensure exact-match behavior on the client.
+                    filterByExactStars(starsSelect.value);
+                });
+            }
+
+            // Optionally, preserve client sort selection if page reloaded with server filters
+            // No automatic action on load to avoid surprising behavior; user triggers sort explicitly.
+        })();
+    </script>
 </body>
 </html>
-
