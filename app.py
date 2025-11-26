@@ -293,10 +293,6 @@ def destination(city):
 
     return render_template("destination.html", info=info)
 
-
-# khởi tạo chatbot (nếu có)
-init_chatbot_routes(app)
-
 # -------------------------
 # ĐƯỜNG DẪN FILE (LINH HOẠT)
 # -------------------------
@@ -1627,3 +1623,4 @@ def google_search(query):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
