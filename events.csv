@@ -1,11 +1,11 @@
-event_id,event_name,city,lat,lon,start_date,end_date,season
-1,Music Festival,Hanoi,21.03,105.85,2025-03-12,2025-03-15,spring
-2,Beach Party,Da Nang,16.06,108.23,2025-07-10,2025-07-12,summer
-3,Flower Festival,Da Lat,11.94,108.45,2025-12-20,2025-12-25,winter
-4,Marathon,Nha Trang,12.25,109.19,2025-08-05,2025-08-06,summer
-5,Food Fair,Ho Chi Minh City,10.77,106.68,2025-09-01,2025-09-05,autumn
-6,Street Art Carnival,Ho Chi Minh City,10.78,106.70,2025-04-20,2025-04-22,spring
-7,Mid-Autumn Lantern Festival,Hanoi,21.03,105.84,2025-09-10,2025-09-12,autumn
-8,Sea Tourism Week,Nha Trang,12.23,109.20,2025-06-15,2025-06-20,summer
-9,Fireworks Festival,Da Nang,16.05,108.22,2025-06-01,2025-06-02,summer
-10,Tet Flower Market,Ho Chi Minh City,10.77,106.69,2025-01-25,2025-01-31,winter
+event_id,event_name,city,lat,lon,start_date,end_date,season, image_path
+1,Music Festival,Hanoi,21.03,105.85,2025-03-12,2025-03-15,spring, https://cdn-images.vtv.vn/562122370168008704/2023/10/23/231023-monsoon-1-169802583702571358817.png; https://macmedia.vn/media/12329/pvei7pj.jpg	
+2,Beach Party,Da Nang,16.06,108.23,2025-07-10,2025-07-12,summer, https://danangfantasticity.com/wp-content/uploads/2025/04/tiec-bai-bien-hang-tuan-tai-holiday-beach-club-bua-tiec-khong-the-bo-lo-01.jpg; https://danangfantasticity.com/wp-content/uploads/2025/04/tiec-bai-bien-hang-tuan-tai-holiday-beach-club-bua-tiec-khong-the-bo-lo-03.jpg
+3,Flower Festival,Da Lat,11.94,108.45,2025-12-20,2025-12-25,winter, https://mia.vn/media/uploads/blog-du-lich/festival-hoa-da-lat-tat-tan-tat-ve-le-hoi-hoa-lon-nhat-tai-da-lat-04-1635691106.jpeg; https://lilystravelagency.com/wp-content/uploads/2025/01/dalat-flower-festival3.png; https://media.vov.vn/sites/default/files/styles/large/public/2024-12/469301405_990274743130379_511004.jpg  
+4,Marathon,Nha Trang,12.25,109.19,2025-08-05,2025-08-06,summer, https://wmimg.azureedge.net/public/img/marathons/nha-trang-marathon/4JpRBH3_nha-trang-marathon.jpg?c=1745467469; 
+5,Food Fair,Ho Chi Minh City,10.77,106.68,2025-09-01,2025-09-05,autumn,
+6,Street Art Carnival,Ho Chi Minh City,10.78,106.70,2025-04-20,2025-04-22,spring,
+7,Mid-Autumn Lantern Festival,Hanoi,21.03,105.84,2025-09-10,2025-09-12,autumn,
+8,Sea Tourism Week,Nha Trang,12.23,109.20,2025-06-15,2025-06-20,summer,
+9,Fireworks Festival,Da Nang,16.05,108.22,2025-06-01,2025-06-02,summer,
+10,Tet Flower Market,Ho Chi Minh City,10.77,106.69,2025-01-25,2025-01-31,winter,
