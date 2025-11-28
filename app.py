@@ -1440,36 +1440,52 @@ def should_show_hotel_cards(ai_response, filtered_hotels, target_city):
     
     return has_hotel_mentions or city_mentioned
 
-def smart_hotel_filtering(hotels_data, reviews_data, user_query, query_analysis):
-    """Lọc khách sạn thông minh - FIX ĐỒNG BỘ VỚI AI"""
+def normalize_city_name(city_name):
+    """Chuẩn hóa tên thành phố để so sánh"""
+    if not city_name:
+        return ""
+    
+    city_mapping = {
+        'hà nội': 'Hanoi', 'hanoi': 'Hanoi',
+        'đà nẵng': 'Da Nang', 'danang': 'Da Nang', 
+        'nha trang': 'Nha Trang', 'nhatrang': 'Nha Trang',
+        'hồ chí minh': 'Ho Chi Minh', 'ho chi minh': 'Ho Chi Minh',
+        'sài gòn': 'Ho Chi Minh'
+    }
+    
+    city_lower = city_name.lower().strip()
+    return city_mapping.get(city_lower, city_name)
+
+def smart_hotel_filtering_with_city_constraint(hotels_data, reviews_data, user_query, query_analysis, target_city):
+    """Lọc khách sạn thông minh với ràng buộc thành phố - FIXED VERSION"""
     query_lower = query_analysis.get('normalized_query', user_query.lower())
     scored_hotels = []
     
     # Xác định tiêu chí từ query
-    target_city = extract_city_from_query(query_lower)
     budget_range = extract_budget_from_query(query_lower)
     amenities_needed = extract_amenities_from_query(query_lower)
     hotel_type = extract_hotel_type_from_query(query_lower)
     
-    print(f"🔍 Smart filtering - City: {target_city}, Query: {query_lower}")
+    print(f"🔍 Smart filtering with city constraint - City: {target_city}")
+    print(f"🔍 Available hotels in target city: {[h['name'] for h in hotels_data if h.get('city', '').lower() == target_city.lower()]}")
     
     for hotel in hotels_data:
-        score = 0
-        hotel_city = hotel.get('city', '').lower().strip()
+        hotel_city = hotel.get('city', '').strip()
         
-        # ĐIỂM QUAN TRỌNG: Thành phố (bắt buộc nếu có target)
-        if target_city:
-            target_city_lower = target_city.lower()
-            if hotel_city == target_city_lower:
-                score += 20  # Tăng điểm mạnh cho khớp chính xác
-                print(f"🎯 Exact city match: {hotel['name']} in {hotel_city}")
-            else:
-                # Nếu không khớp thành phố, KHÔNG HIỂN THỊ
-                print(f"❌ City mismatch - Skipping: {hotel['name']} ({hotel_city}) vs {target_city_lower}")
-                continue  # Bỏ qua hoàn toàn nếu không khớp thành phố
-        else:
-            # Không có thành phố target, vẫn tính điểm bình thường
-            score += 5
+        # Sử dụng hàm chuẩn hóa để so sánh
+        hotel_city_normalized = normalize_city_name(hotel_city)
+        target_city_normalized = normalize_city_name(target_city) if target_city else ""
+        
+        # RÀNG BUỘC QUAN TRỌNG: So sánh đã được chuẩn hóa
+        if target_city and hotel_city_normalized != target_city_normalized:
+            print(f"❌ City mismatch - Skipping: {hotel['name']} ({hotel_city}) vs {target_city}")
+            continue
+        
+        score = 0
+        
+        # Điểm cơ bản cho khách sạn cùng thành phố
+        score += 10
+        print(f"✅ City match: {hotel['name']} in {hotel_city}")
         
         # Điểm cho ngân sách
         if budget_range:
@@ -1487,10 +1503,10 @@ def smart_hotel_filtering(hotels_data, reviews_data, user_query, query_analysis)
                 if amenity in hotel_amenities:
                     score += 3
         
-        # Điểm cho loại khách sạn
+        # Điểm cho loại khách sạn (5 sao)
         hotel_rating = hotel.get('rating', 0)
         if hotel_type == 'luxury' and hotel_rating >= 4.5:
-            score += 5
+            score += 10  # Tăng điểm mạnh cho khách sạn cao cấp
         elif hotel_type == 'budget' and hotel_rating <= 4.0:
             score += 5
         elif hotel_type == 'midrange' and 4.0 < hotel_rating < 4.5:
@@ -1507,7 +1523,7 @@ def smart_hotel_filtering(hotels_data, reviews_data, user_query, query_analysis)
         
         hotel['match_score'] = score
         scored_hotels.append(hotel)
-        print(f"📊 Added to results: {hotel['name']} - Score: {score}")
+        print(f"📊 Added to results: {hotel['name']} in {hotel_city} - Score: {score}")
     
     # Sắp xếp theo điểm
     scored_hotels.sort(key=lambda x: x.get('match_score', 0), reverse=True)
@@ -1522,27 +1538,23 @@ def smart_hotel_filtering(hotels_data, reviews_data, user_query, query_analysis)
 
 # Giữ nguyên các hàm extract_* từ bản trước
 def extract_city_from_query(query):
-    """Trích xuất thành phố từ query - CẢI THIỆN ĐỘ CHÍNH XÁC"""
+    """Trích xuất thành phố từ query - FIXED VERSION"""
     city_mapping = {
-        'đà nẵng': 'Đà Nẵng', 'danang': 'Đà Nẵng', 'da nang': 'Đà Nẵng', 'đà nẵng': 'Đà Nẵng',
-        'hà nội': 'Hà Nội', 'hanoi': 'Hà Nội', 'ha noi': 'Hà Nội', 'hà nội': 'Hà Nội',
-        'hồ chí minh': 'Hồ Chí Minh', 'sài gòn': 'Hồ Chí Minh', 'ho chi minh': 'Hồ Chí Minh', 
-        'hcm': 'Hồ Chí Minh', 'tp.hcm': 'Hồ Chí Minh', 'tphcm': 'Hồ Chí Minh',
-        'nha trang': 'Nha Trang', 'nhatrang': 'Nha Trang', 'nha trang': 'Nha Trang',
-        'huế': 'Huế', 'hue': 'Huế', 'huế': 'Huế',
-        'hội an': 'Hội An', 'hoi an': 'Hội An', 'hội an': 'Hội An',
-        'đà lạt': 'Đà Lạt', 'dalat': 'Đà Lạt', 'da lat': 'Đà Lạt', 'đà lạt': 'Đà Lạt',
-        'phú quốc': 'Phú Quốc', 'phu quoc': 'Phú Quốc', 'phú quốc': 'Phú Quốc',
-        'vũng tàu': 'Vũng Tàu', 'vung tau': 'Vũng Tàu', 'vũng tàu': 'Vũng Tàu',
-        'quảng ninh': 'Quảng Ninh', 'quang ninh': 'Quảng Ninh', 'hạ long': 'Quảng Ninh', 
-        'ha long': 'Quảng Ninh', 'quảng ninh': 'Quảng Ninh'
+        'hà nội': 'Hanoi', 'hanoi': 'Hanoi', 'ha noi': 'Hanoi',
+        'đà nẵng': 'Da Nang', 'danang': 'Da Nang', 'da nang': 'Da Nang',
+        'nha trang': 'Nha Trang', 'nhatrang': 'Nha Trang',
+        'hồ chí minh': 'Ho Chi Minh', 'sài gòn': 'Ho Chi Minh', 
+        'ho chi minh': 'Ho Chi Minh', 'hcm': 'Ho Chi Minh',
+        'tp.hcm': 'Ho Chi Minh', 'tphcm': 'Ho Chi Minh'
     }
+    
+    query_lower = query.lower()
     
     # Tìm thành phố với độ ưu tiên cao (từ dài trước)
     sorted_cities = sorted(city_mapping.keys(), key=len, reverse=True)
     
     for keyword in sorted_cities:
-        if keyword in query:
+        if keyword in query_lower:
             return city_mapping[keyword]
     
     return None
@@ -1623,4 +1635,5 @@ def google_search(query):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
