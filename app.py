@@ -3,6 +3,7 @@ import re
 import ast
 import tempfile
 import random
+import time
 from datetime import datetime
 import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
@@ -1667,6 +1668,7 @@ def google_search(query):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
