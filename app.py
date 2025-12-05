@@ -561,6 +561,10 @@ def hotel_detail(name):
     hotel['event_image_url'] = hotel_data.iloc[0].get('event_image_url', '')
     if pd.isna(hotel['event_image_url']):
         hotel['event_image_url'] = ''
+        
+    hotel['hotel_description'] = hotel_data.iloc[0].get('hotel_description', '')
+    if pd.isna(hotel['hotel_description']):
+        hotel['hotel_description'] = ''
 
     return render_template(
         'detail.html',
@@ -1663,6 +1667,7 @@ def google_search(query):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
