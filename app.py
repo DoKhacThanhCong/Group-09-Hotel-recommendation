@@ -949,7 +949,7 @@ try:
         print("CẢNH BÁO: GOOGLE_API_KEY chưa được set.")
     
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-3-pro-preview')
 except Exception as e:
     print(f"Lỗi khởi tạo Gemini: {e}")
     model = None # Đặt là None để kiểm tra sau
@@ -1667,6 +1667,7 @@ def google_search(query):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
