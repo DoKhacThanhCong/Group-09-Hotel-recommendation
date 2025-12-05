@@ -164,9 +164,23 @@
                 </div>
 
                 <!-- 🎉 Ảnh sự kiện -->
-                {% if hotel.event_image_url %}
-                <h4 class="text-primary mt-4">Sự kiện đặc biệt</h4>
-                <img src="{{ hotel.event_image_url }}" alt="Ảnh event" style="width:100%; max-height:600px; object-fit:cover; border-radius:10px;">
+                {% if hotel.event_image_url or hotel.event_description %}
+                <div class="mt-4" style="border-radius:10px; overflow:hidden; background:#fff7e6;">
+
+                    {% if hotel.event_image_url %}
+                    <img src="{{ hotel.event_image_url }}"
+                         alt="Ảnh event"
+                         style="width:100%; max-height:600px; object-fit:cover;">
+                    {% endif %}
+
+                    {% if hotel.event_description %}
+                    <div style="padding:15px; font-size:16px;">
+                        <h4 class="text-primary mb-2">Sự kiện đặc biệt</h4>
+                        <p>{{ hotel.event_description }}</p>
+                    </div>
+                    {% endif %}
+
+                </div>
                 {% endif %}
 
                 <h5 class="mt-3">Tiện nghi nổi bật:</h5>
@@ -306,3 +320,4 @@
     </script>
 </body>
 </html>
+
