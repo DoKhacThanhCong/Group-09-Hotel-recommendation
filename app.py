@@ -5,6 +5,7 @@ import tempfile
 import random
 import time
 import csv
+import requests
 from datetime import datetime
 import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
@@ -809,9 +810,10 @@ def add_review(name):
 
 # === TRANG ĐẶT PHÒNG ===
 @app.route('/booking/<name>/<room_type>', methods=['GET', 'POST'])
-@app.route('/booking/<name>/<room_type>', methods=['GET', 'POST'])
 def booking(name, room_type):
     hotels_df = read_csv_safe(HOTELS_CSV)
+    if 'rooms_available' not in hotels_df.columns:
+        hotels_df['rooms_available'] = 0
     hotels_df['rooms_available'] = hotels_df.get('rooms_available', 0).astype(int)
     hotels_df['status'] = hotels_df['rooms_available'].apply(lambda x: 'còn' if int(x) > 0 else 'hết')
 
@@ -820,6 +822,8 @@ def booking(name, room_type):
         return "<h3>Không tìm thấy khách sạn!</h3>", 404
 
     hotel = map_hotel_row(hotel_data.iloc[0].to_dict())
+
+    current_rooms = int(hotel_data.iloc[0]['rooms_available'])
     hotel['status'] = 'còn' if int(hotel_data.iloc[0]['rooms_available']) > 0 else 'hết'
     is_available = hotel['status'].lower() == 'còn'
     flash(f"Trạng thái phòng hiện tại: {hotel['status']}", "info")
@@ -830,6 +834,10 @@ def booking(name, room_type):
     discounted_price = get_discounted_price(user_rank, base_price)
 
     if request.method == 'POST':
+        if current_rooms <= 0:
+            flash("Xin lỗi, phòng vừa mới hết!", "danger")
+            return redirect(url_for('hotel_detail', name=name))
+        
         # Lấy thông tin người đặt
         username = session.get('user', {}).get('username', 'Khách vãng lai')
         email = request.form.get('email', '').strip()  # email từ form, bắt buộc điền nếu chưa đăng nhập
@@ -865,6 +873,16 @@ def booking(name, room_type):
             df = pd.DataFrame(columns=info.keys())
         df = pd.concat([df, pd.DataFrame([info])], ignore_index=True)
         df.to_csv(BOOKINGS_CSV, index=False, encoding="utf-8-sig")
+
+        # CẬP NHẬT SỐ PHÒNG TRONG HOTELS.CSV
+        hotel_idx = hotels_df.index[hotels_df['name'] == name].tolist()
+        if hotel_idx:
+            idx = hotel_idx[0]
+            new_room_count = max(0, current_rooms - 1)
+            hotels_df.at[idx, 'rooms_available'] = new_room_count
+            if new_room_count == 0:
+                hotels_df.at[idx, 'status'] = 'hết'
+            hotels_df.to_csv(HOTELS_CSV, index=False, encoding="utf-8-sig")
 
         # Cập nhật user session & total_spent nếu đăng nhập
         if "user" in session:
@@ -2049,4 +2067,5 @@ init_event_files()
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
