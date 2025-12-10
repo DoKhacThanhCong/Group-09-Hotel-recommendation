@@ -5,14 +5,19 @@ import tempfile
 import random
 import time
 import csv
-import requests
 from datetime import datetime
 import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_mail import Mail, Message   # nếu dùng mail
 from werkzeug.security import generate_password_hash, check_password_hash
 import google.generativeai as genai
+from flask import send_from_directory
 
+app = Flask(__name__)
+
+@app.route('/data/<path:filename>')
+def data_files(filename):
+    return send_from_directory('data', filename)
 # -------------------------
 # CẤU HÌNH SỰ KIỆN VÒNG QUAY TỬ THẦN
 # -------------------------
@@ -808,12 +813,97 @@ def add_review(name):
 
     return redirect(url_for('hotel_detail', name=name))
 
+# === TRA CỨU MÃ ĐẶT PHÒNG ===
+@app.route('/check_booking', methods=['POST'])
+def check_booking():
+    code_input = request.form.get('code', '').strip()  # input từ form
+
+    try:
+        df = pd.read_csv(BOOKINGS_CSV, encoding='utf-8-sig')
+    except FileNotFoundError:
+        flash("Không có dữ liệu đặt phòng!", "danger")
+        return redirect(url_for('index'))
+
+    # Ép kiểu string, loại bỏ khoảng trắng
+    df['booking_code'] = df['booking_code'].astype(str).str.strip()
+
+    # Tìm booking_code
+    result = df[df['booking_code'] == code_input]
+
+    if result.empty:
+        flash("❌ Không tìm thấy mã đặt phòng!", "danger")
+    else:
+        booking = result.iloc[0].to_dict()
+        # Hiển thị thông tin với <br> để xuống dòng
+        info_text = (
+            f"Khách sạn: {booking['hotel_name']}<br>"
+            f"Phòng: {booking['room_type']}<br>"
+            f"Giá: {booking['price']}<br>"
+            f"Khách: {booking['user_name']}<br>"
+            f"Ngày checkin: {booking['checkin_date']}<br>"
+            f"Email: {booking['email']}<br>"
+            f"SĐT: {booking['phone']}<br>"
+            f"Trẻ em: {booking['num_children']}<br>"
+            f"Người lớn: {booking['num_adults']}<br>"
+        )
+        flash(f"✅ Thông tin đặt phòng:<br>{info_text}", "success")
+
+    return redirect(url_for('index'))
+
+
+# === TRANG THANH TOÁN BẰNG QR ===
+@app.route("/payment/<code>")
+def payment_page(code):
+    try:
+        df = pd.read_csv(BOOKINGS_CSV, encoding="utf-8-sig")
+    except:
+        return "Không tìm thấy dữ liệu đặt phòng!", 404
+
+    df['booking_code'] = df['booking_code'].astype(str).str.strip()
+    result = df[df['booking_code'] == code]
+
+    if result.empty:
+        return "<h3>Mã đặt phòng không tồn tại!</h3>", 404
+
+    info = result.iloc[0].to_dict()
+
+    return render_template("payment.html", info=info)
+
+
+
+
+# === XÁC NHẬN KHÁCH ĐÃ THANH TOÁN ===
+@app.route("/payment_confirm", methods=["POST"])
+def payment_confirm():
+    code = request.form.get("code", "").strip()
+
+    try:
+        df = pd.read_csv(BOOKINGS_CSV, encoding="utf-8-sig")
+    except:
+        flash("Không thể đọc dữ liệu!", "danger")
+        return redirect(url_for("index"))
+
+    df['booking_code'] = df['booking_code'].astype(str).str.strip()
+
+    if code not in df['booking_code'].values:
+        flash("Không tìm thấy mã đặt phòng!", "danger")
+        return redirect(url_for("index"))
+
+    # Cập nhật trạng thái thanh toán
+    df.loc[df['booking_code'] == code, "payment_status"] = "Đã thanh toán"
+    df.to_csv(BOOKINGS_CSV, index=False, encoding="utf-8-sig")
+
+    flash("🎉 Thanh toán thành công! Đơn đặt phòng đã được xác nhận.", "success")
+
+    return redirect(url_for("index"))
+
+
+
 # === TRANG ĐẶT PHÒNG ===
+@app.route('/booking/<name>/<room_type>', methods=['GET', 'POST'])
 @app.route('/booking/<name>/<room_type>', methods=['GET', 'POST'])
 def booking(name, room_type):
     hotels_df = read_csv_safe(HOTELS_CSV)
-    if 'rooms_available' not in hotels_df.columns:
-        hotels_df['rooms_available'] = 0
     hotels_df['rooms_available'] = hotels_df.get('rooms_available', 0).astype(int)
     hotels_df['status'] = hotels_df['rooms_available'].apply(lambda x: 'còn' if int(x) > 0 else 'hết')
 
@@ -822,8 +912,6 @@ def booking(name, room_type):
         return "<h3>Không tìm thấy khách sạn!</h3>", 404
 
     hotel = map_hotel_row(hotel_data.iloc[0].to_dict())
-
-    current_rooms = int(hotel_data.iloc[0]['rooms_available'])
     hotel['status'] = 'còn' if int(hotel_data.iloc[0]['rooms_available']) > 0 else 'hết'
     is_available = hotel['status'].lower() == 'còn'
     flash(f"Trạng thái phòng hiện tại: {hotel['status']}", "info")
@@ -834,10 +922,6 @@ def booking(name, room_type):
     discounted_price = get_discounted_price(user_rank, base_price)
 
     if request.method == 'POST':
-        if current_rooms <= 0:
-            flash("Xin lỗi, phòng vừa mới hết!", "danger")
-            return redirect(url_for('hotel_detail', name=name))
-        
         # Lấy thông tin người đặt
         username = session.get('user', {}).get('username', 'Khách vãng lai')
         email = request.form.get('email', '').strip()  # email từ form, bắt buộc điền nếu chưa đăng nhập
@@ -873,16 +957,6 @@ def booking(name, room_type):
             df = pd.DataFrame(columns=info.keys())
         df = pd.concat([df, pd.DataFrame([info])], ignore_index=True)
         df.to_csv(BOOKINGS_CSV, index=False, encoding="utf-8-sig")
-
-        # CẬP NHẬT SỐ PHÒNG TRONG HOTELS.CSV
-        hotel_idx = hotels_df.index[hotels_df['name'] == name].tolist()
-        if hotel_idx:
-            idx = hotel_idx[0]
-            new_room_count = max(0, current_rooms - 1)
-            hotels_df.at[idx, 'rooms_available'] = new_room_count
-            if new_room_count == 0:
-                hotels_df.at[idx, 'status'] = 'hết'
-            hotels_df.to_csv(HOTELS_CSV, index=False, encoding="utf-8-sig")
 
         # Cập nhật user session & total_spent nếu đăng nhập
         if "user" in session:
@@ -2064,8 +2138,81 @@ def spin_wheel():
 
 init_event_files()
 
+# =======================================================
+# 💰 MODULE THANH TOÁN TỰ ĐỘNG (WEBHOOK & CSV)
+# =======================================================
+
+payment_memory_db = {}
+
+def update_booking_csv_real(booking_code, amount):
+    """Cập nhật trạng thái Paid vào file CSV"""
+    try:
+        if os.path.exists(BOOKINGS_CSV):
+            df = pd.read_csv(BOOKINGS_CSV, encoding='utf-8-sig')
+            # Tìm dòng có mã đơn (Ví dụ: BOOK_12345)
+            mask = df.apply(lambda row: row.astype(str).str.contains(booking_code).any(), axis=1)
+            
+            if mask.any():
+                df.loc[mask, 'status'] = 'PAID'
+                df.to_csv(BOOKINGS_CSV, index=False, encoding='utf-8-sig')
+                print(f"✅ Đã nhận {amount}đ. Đơn {booking_code} -> PAID")
+                return True
+    except Exception as e:
+        print(f"❌ Lỗi ghi file: {e}")
+    return False
+
+# 1. API WEBHOOK (Cái này quan trọng nhất!)
+# Đây là cái link anh sẽ dán vào SePay/Casso
+@app.route('/api/webhook/payment_notification', methods=['POST'])
+def webhook_payment():
+    try:
+        data = request.get_json()
+        print(f"📩 NHẬN TÍN HIỆU NGÂN HÀNG: {data}")
+
+        # Lấy danh sách giao dịch (SePay/Casso trả về mảng)
+        transactions = data.get('transactions', []) # SePay dùng 'transactions', Casso dùng 'data'
+        if not transactions:
+            transactions = data.get('data', [])
+
+        for trans in transactions:
+            # Lấy nội dung chuyển khoản (Ví dụ: "THANH TOAN BOOK123")
+            content = trans.get('transaction_content', '') or trans.get('description', '')
+            amount = trans.get('amount_in', 0) or trans.get('amount', 0)
+
+            # Tìm mã đơn hàng (Tìm chữ BOOK... trong nội dung)
+            match = re.search(r'(BOOK_\w+)', content) # Ví dụ tìm BOOK_173123...
+            if match:
+                found_code = match.group(1)
+                print(f" Đã Thanh Toán Thành Công! Đơn: {found_code} - Số tiền: {amount}")
+                
+                # Cập nhật ngay lập tức
+                payment_memory_db[found_code] = 'PAID'
+                update_booking_csv_real(found_code, amount)
+
+        return jsonify({'SUCCESS': True})
+    except Exception as e:
+        print(f"❌ Lỗi Webhook: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# 2. API CHECK TRẠNG THÁI (Cho web khách hỏi liên tục)
+@app.route('/api/check_status')
+def check_status(booking_code):
+    status = payment_memory_db.get(booking_code, 'pending')
+    
+    # Nếu RAM chưa có, check kỹ trong CSV lần nữa cho chắc
+    if status == 'pending' and os.path.exists(BOOKINGS_CSV):
+        try:
+            df = pd.read_csv(BOOKINGS_CSV, encoding='utf-8-sig')
+            mask = df.apply(lambda row: row.astype(str).str.contains(booking_code).any(), axis=1)
+            if mask.any() and df.loc[mask, 'status'].values[0] == 'PAID':
+                status = 'PAID'
+                payment_memory_db[booking_code] = 'PAID'
+        except: pass
+        
+    return jsonify({'status': status})
+
+
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
-
 
