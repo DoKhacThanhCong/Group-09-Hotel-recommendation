@@ -167,6 +167,17 @@
                 opacity: 1;
             }
         }
+
+        .navbar-nav .nav-link {
+            font-size: 13px;
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+
+        .navbar-brand {
+            font-size: 16px;
+        }
+
     </style>
 </head>
 
@@ -270,14 +281,27 @@
         }
 
         @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
+            0% {
+                transform: translateX(100%);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
         }
 
         @keyframes gradientShift {
-            0% { background-position: 200% 0%; }
-            50% { background-position: 0% 0%; }
-            100% { background-position: 200% 0%; }
+            0% {
+                background-position: 200% 0%;
+            }
+
+            50% {
+                background-position: 0% 0%;
+            }
+
+            100% {
+                background-position: 200% 0%;
+            }
         }
 
         .event-link:hover {
@@ -289,18 +313,18 @@
 
     <script>
         // Kiểm tra thời gian sự kiện (8 tháng đầu năm)
-        document.addEventListener('DOMContentLoaded', function() {
-            const now = new Date();
-            const currentMonth = now.getMonth() + 1; // 1-12
-            const eventBanner = document.getElementById('event-banner');
-            
-            // Ẩn banner nếu không trong thời gian sự kiện (tháng 8-12)
-            if (currentMonth < 8) {
-                eventBanner.style.display = 'none';
-            }
-            else {
-                eventBanner.style.display = 'block';
-            }
+        document.addEventListener('DOMContentLoaded', function () {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const eventBanner = document.getElementById('event-banner');
+
+        // Ẩn banner nếu không trong thời gian sự kiện (tháng 8-12)
+        if (currentMonth < 8) {
+        eventBanner.style.display = 'none';
+        }
+        else {
+        eventBanner.style.display = 'block';
+        }
         });
     </script>
 
@@ -346,6 +370,31 @@
                 </a>
             </div>
         </form>
+    </div>
+
+
+
+    <!-- Tra cứu mã đặt phòng -->
+    <div class="lookup my-5 container">
+        <h2>🔎 Tra cứu mã đặt phòng</h2>
+        <p>Nhập mã đặt phòng của bạn để kiểm tra thông tin</p>
+
+        <form action="/check_booking" method="POST" class="d-flex gap-2 flex-wrap">
+            <input type="text" name="code" class="form-control" placeholder="Nhập mã đặt phòng" required>
+            <button type="submit" class="btn btn-primary">Tra cứu</button>
+        </form>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="mt-3">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category=='success' else 'danger' }} d-inline-block">
+                {{ message | safe }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
     </div>
 
     <!-- ===================== BẮT ĐẦU: MỞ RỘNG HERO - INTRO + DESTINATIONS ===================== -->
@@ -442,13 +491,18 @@
     <!-- JS: xử lý tìm kiếm nhanh -->
     <script>
         document.getElementById('quickSearchInput')?.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const q = encodeURIComponent(this.value.trim());
-                if (q) window.location.href = '/destinations/' + q;
-            }
+        if (e.key === 'Enter') {
+        e.preventDefault();
+        const q = encodeURIComponent(this.value.trim());
+        if (q) window.location.href = '/destinations/' + q;
+        }
         });
     </script>
+
+
+
+
+
     <!-- ===================== KẾT THÚC: MỞ RỘNG HERO - INTRO + DESTINATIONS ===================== -->
     <!-- ===================== ĐÁNH GIÁ KHÁCH HÀNG - CAROUSEL ===================== -->
     <section class="container mb-5" id="reviews-carousel-section" style="z-index:1; position:relative;">
@@ -614,7 +668,13 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <div class="chatbot-floating-btn">
+        <a href="/chatbot" class="floating-btn">
+            <span class="btn-icon">💬</span>
+            <span class="btn-text">Chatbot Tư vấn</span>
+        </a>
+    </div>
 </body>
 </html>
-
 

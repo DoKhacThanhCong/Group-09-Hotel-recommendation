@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Thanh toán QR</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body class="bg-light">
+
+    <div class="container mt-5">
+        <div class="card shadow p-4">
+
+            <!-- PHẦN 1: MÀN HÌNH CHỜ THANH TOÁN  -->
+            <div id="payment-pending">
+                <h2 class="text-center mb-4">💳 Thanh toán đặt phòng</h2>
+
+                <p><b>Khách sạn:</b> {{ info.hotel_name }}</p>
+                <p><b>Phòng:</b> {{ info.room_type }}</p>
+                <p><b>Giá:</b> {{ info.price }} VND</p>
+                <p><b>Mã đặt phòng:</b> <span class="text-primary fw-bold">{{ info.booking_code }}</span></p>
+
+                <hr>
+
+                <h4 class="text-center">🔻 Quét mã QR bên dưới để thanh toán</h4>
+
+                <!-- Hiển thị file pdf mã QR -->
+                <div class="text-center my-3 position-relative">
+                    <iframe src="{{ url_for('static', filename='qr.pdf') }}" width="300" height="400"
+                        style="border:1px solid #ccc;">
+                    </iframe>
+
+                    <!-- Hiệu ứng loading nhỏ để khách biết hệ thống đang chạy -->
+                    <div class="mt-2 text-muted fst-italic">
+                        <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                        Đang chờ xác nhận từ ngân hàng...
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Form thủ công (Giữ lại để phòng hờ) -->
+                <form action="/payment_confirm" method="POST">
+                    <input type="hidden" name="code" value="{{ info.booking_code }}">
+                    <button class="btn btn-outline-success w-100 py-2">
+                        ✔ Tôi đã thanh toán (Thủ công)
+                    </button>
+                </form>
+
+                <a href="/" class="btn btn-secondary w-100 mt-3">⬅ Quay lại trang chủ</a>
+            </div>
+
+            <!-- PHẦN 2: MÀN HÌNH THÀNH CÔNG (Mặc định ẩn: d-none) -->
+            <div id="payment-success" class="d-none text-center py-5">
+                <div class="mb-4">
+                    <i class="fa-solid fa-circle-check text-success" style="font-size: 80px;"></i>
+                </div>
+                <h2 class="text-success fw-bold">Thanh toán thành công!</h2>
+                <p class="text-muted">Cảm ơn quý khách. Đặt phòng của bạn đã được xác nhận.</p>
+
+                <div class="alert alert-info mt-4">
+                    Mã đặt phòng: <strong>{{ info.booking_code }}</strong>
+                </div>
+
+                <a href="/" class="btn btn-primary w-100 mt-3">Về trang chủ</a>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SCRIPT KIỂM TRA THANH TOÁN TỰ ĐỘNG -->
+    <script>
+        // 1. Lấy mã đơn hàng từ Jinja2 đổ ra biến Javascript
+        const bookingCode = "{{ info.booking_code }}";
+        let checkInterval;
+
+        // 2. Hàm gọi lên Server hỏi trạng thái
+        async function checkPaymentStatus() {
+            try {
+                // Gọi API Python của anh (Anh cần tạo route này bên file Python nhé)
+                // Ví dụ: @app.route('/api/check_status')
+                const response = await fetch(`/api/check_status?code=${bookingCode}`);
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Logic: Nếu server báo status là 'PAID' hoặc 'SUCCESS'
+                    if (data.status === 'PAID' || data.status === 'SUCCESS') {
+                        clearInterval(checkInterval); // Dừng hỏi
+                        showSuccessScreen();
+                    }
+                }
+            } catch (error) {
+                console.error("Lỗi mạng hoặc server chưa phản hồi:", error);
+            }
+        }
+
+        // 3. Hàm chuyển đổi giao diện sang Success
+        function showSuccessScreen() {
+            // Ẩn phần Pending
+            document.getElementById('payment-pending').classList.add('d-none');
+            // Hiện phần Success
+            document.getElementById('payment-success').classList.remove('d-none');
+            document.getElementById('payment-success').classList.add('d-block'); // Bootstrap class để hiện
+        }
+
+        // 4. Chạy vòng lặp kiểm tra mỗi 3 giây
+        window.onload = function () {
+            // Set 3000ms = 3 giây
+            checkInterval = setInterval(checkPaymentStatus, 3000);
+        };
+    </script>
+
+</body>
+
+</html>
