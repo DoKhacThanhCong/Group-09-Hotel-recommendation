@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -88,6 +88,24 @@
                 transform: scale(1.05);
                 box-shadow: 0 0 15px rgba(255,138,0,0.5);
             }
+
+        /* Nút thanh toán */
+        .btn-pay {
+            margin-top: 20px;
+            padding: 12px 25px;
+            border-radius: 30px;
+            background: #007bff;
+            color: white;
+            font-weight: 600;
+            display: inline-block;
+            text-decoration: none;
+            transition: 0.3s ease;
+        }
+
+            .btn-pay:hover {
+                background: #0056b3;
+                transform: scale(1.05);
+            }
     </style>
 </head>
 
@@ -106,6 +124,11 @@
         {% if info.email %}<p>📧 Email: {{ info.email }}</p>{% endif %}
         {% if info.note %}<p>📝 Yêu cầu riêng: "{{ info.note }}"</p>{% endif %}
 
+        <!-- ⭐⭐⭐ THÊM NÚT THANH TOÁN TẠI ĐÂY ⭐⭐⭐ -->
+        <div style="margin-top: 20px;">
+            <a href="/payment/{{ info.booking_code }}" class="btn-pay">💳 Thanh toán ngay</a>
+        </div>
+        <!-- ⭐⭐⭐ HẾT PHẦN THÊM ⭐⭐⭐ -->
         {% else %}
         <p>Cảm ơn <span class="highlight">{{ fullname }}</span> đã đặt phòng tại <strong>{{ hotel.name }}</strong>.</p>
         <p>🏷️ Loại phòng: <strong>{{ room_type }}</strong></p>
