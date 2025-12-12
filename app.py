@@ -3,18 +3,19 @@ import re
 import ast
 import tempfile
 import random
+import resend
+import requests
 import time
 import csv
 from datetime import datetime
 import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
-from flask_mail import Mail, Message   # nếu dùng mail
 from werkzeug.security import generate_password_hash, check_password_hash
 import google.generativeai as genai
 from flask import send_from_directory
 
 app = Flask(__name__)
-
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 @app.route('/data/<path:filename>')
 def data_files(filename):
     return send_from_directory('data', filename)
@@ -76,6 +77,29 @@ bookings_db = []
 # -------------------------
 # HÀM HỖ TRỢ
 # -------------------------
+def send_email(to_email, subject, html_content):
+    url = "https://api.resend.com/emails"
+    
+    headers = {
+        "Authorization": f"Bearer {RESEND_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "from": "Hotel Pinder <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": subject,
+        "html": html_content
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        print("Resend response:", response.text)
+        return response.status_code == 200
+    except Exception as e:
+        print("Lỗi Resend:", e)
+        return False
+        
 def get_user_rank(total_spent):
     if total_spent >= 20_000_000:
         return "Bạch kim"
@@ -534,18 +558,6 @@ else:
 BOOKINGS_CSV = os.path.join(DATA_FOLDER, 'bookings.csv')
 REVIEWS_CSV = os.path.join(BASE_DIR, 'reviews.csv') if os.path.exists(os.path.join(BASE_DIR, 'reviews.csv')) else os.path.join(DATA_FOLDER, 'reviews.csv')
 
-# === CẤU HÌNH EMAIL (giữ nguyên) ===
-app.config.update(
-    MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=465,
-    MAIL_USE_TLS=False,
-    MAIL_USE_SSL=True,
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
-    MAIL_DEFAULT_SENDER=('Hotel Pinder', os.getenv("MAIL_USERNAME"))
-)
-mail = Mail(app)
-
 # === FILE PATHS (Tạo bookings nếu chưa có) ===
 try:
     safe_dir = os.path.dirname(BOOKINGS_CSV)
@@ -965,41 +977,37 @@ def booking(name, room_type):
                 save_users(users_db)
                 session['user']['rank'] = get_user_rank(users_db[username]['total_spent'])
 
-        # Gửi email cho khách nếu có
+        # === GỬI EMAIL CHO KHÁCH ===
         if email:
-            try:
-                msg_user = Message(
-                    subject="Xác nhận đặt phòng - Hotel Pinder",
-                    recipients=[email]
-                )
-                msg_user.html = render_template("msg_user.html", info=info)
-                mail.send(msg_user)
-            except Exception as e:
-                print(f"Lỗi gửi email cho khách: {e}")
-
-        # Gửi email cho admin
-        try:
-            msg_admin = Message(
-                subject=f"Đơn đặt phòng mới tại {info['hotel_name']}",
-                recipients=["hotelpinder@gmail.com"]
+            html_user = render_template("msg_user.html", info=info)
+            send_email(
+                to_email=email,
+                subject="Xác nhận đặt phòng - Hotel Pinder",
+                html_content=html_user
             )
-            msg_admin.html = f"""
-                <h3>Đơn đặt phòng mới</h3>
-                <p>Khách sạn: {info['hotel_name']}</p>
-                <p>Người đặt: {info['user_name']}</p>
-                <p>Email: {info['email']}</p>
-                <p>SĐT: {info['phone']}</p>
-                <p>Phòng: {info['room_type']}</p>
-                <p>Ngày nhận: {info['checkin_date']}</p>
-                <p>Số đêm: {info['nights']}</p>
-                <p>Người lớn: {info['num_adults']} | Trẻ em: {info['num_children']}</p>
-                <p>Ghi chú: {info['special_requests']}</p>
-                <p>Giá: {info['price']}</p>
-                <p>Mã đặt phòng: {info['booking_code']}</p>
-            """
-            mail.send(msg_admin)
-        except Exception as e:
-            print(f"Lỗi gửi email admin: {e}")
+
+        # === GỬI EMAIL CHO ADMIN ===
+        html_admin = f"""
+            <h3>Đơn đặt phòng mới</h3>
+            <p>Khách sạn: {info['hotel_name']}</p>
+            <p>Người đặt: {info['user_name']}</p>
+            <p>Email: {info['email']}</p>
+            <p>SĐT: {info['phone']}</p>
+            <p>Phòng: {info['room_type']}</p>
+            <p>Ngày nhận: {info['checkin_date']}</p>
+            <p>Số đêm: {info['nights']}</p>
+            <p>Người lớn: {info['num_adults']} | Trẻ em: {info['num_children']}</p>
+            <p>Ghi chú: {info['special_requests']}</p>
+            <p>Giá: {info['price']}</p>
+            <p>Mã đặt phòng: {info['booking_code']}</p>
+        """
+        
+        send_email(
+            to_email="hotelpinder@gmail.com",
+            subject=f"Đơn đặt phòng mới tại {info['hotel_name']}",
+            html_content=html_admin
+        )
+
 
         flash("Đặt phòng thành công!", "success")
         return render_template('success.html', info=info)
@@ -2215,7 +2223,4 @@ def check_status(booking_code):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
 
