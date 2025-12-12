@@ -537,7 +537,7 @@ REVIEWS_CSV = os.path.join(BASE_DIR, 'reviews.csv') if os.path.exists(os.path.jo
 # === CẤU HÌNH EMAIL (giữ nguyên) ===
 app.config.update(
     MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=587,
+    MAIL_PORT=465,
     MAIL_USE_TLS=True,
     MAIL_USE_SSL=False,
     MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
@@ -2215,5 +2215,6 @@ def check_status(booking_code):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
