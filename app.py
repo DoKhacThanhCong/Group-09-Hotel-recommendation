@@ -540,9 +540,9 @@ app.config.update(
     MAIL_PORT=587,
     MAIL_USE_TLS=True,
     MAIL_USE_SSL=False,
-    MAIL_USERNAME='hotelpinder@gmail.com',   # Gmail thật
-    MAIL_PASSWORD='znsj ynpd burr tdeo',     # Mật khẩu ứng dụng 16 ký tự (giữ như cũ)
-    MAIL_DEFAULT_SENDER=('Hotel Pinder', 'hotelpinder@gmail.com')
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
+    MAIL_DEFAULT_SENDER=('Hotel Pinder', os.getenv("MAIL_USERNAME"))
 )
 mail = Mail(app)
 
@@ -2215,4 +2215,5 @@ def check_status(booking_code):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
