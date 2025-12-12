@@ -538,8 +538,8 @@ REVIEWS_CSV = os.path.join(BASE_DIR, 'reviews.csv') if os.path.exists(os.path.jo
 app.config.update(
     MAIL_SERVER='smtp.gmail.com',
     MAIL_PORT=465,
-    MAIL_USE_TLS=True,
-    MAIL_USE_SSL=False,
+    MAIL_USE_TLS=False,
+    MAIL_USE_SSL=True,
     MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
     MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
     MAIL_DEFAULT_SENDER=('Hotel Pinder', os.getenv("MAIL_USERNAME"))
@@ -2215,6 +2215,7 @@ def check_status(booking_code):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
