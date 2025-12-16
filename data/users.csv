@@ -1,1 +1,2 @@
 ﻿username,password,full_name,dob,gender,email,phone,total_spent,history
+Nguyen Van An,scrypt:32768:8:1$ghPLuMdWGXirAVFp$83d7418a4cc9f3949103374143a4b92d104261f92fc750f73c51ad9c8ac2202c2ed9fd13512e43516e0202ceac2c371541380b404cd906c308252224ecbdab86,Nguyen Van An,2006-09-23,Nam,dokhacthanhconh@gmail.com,0987082010,0,[]
