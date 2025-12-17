@@ -2188,7 +2188,7 @@ def webhook_payment():
             amount = trans.get('amount_in', 0) or trans.get('amount', 0)
 
             # Tìm mã đơn hàng (Tìm chữ BOOK... trong nội dung)
-            match = re.search(r'(BOOK_\w+)', content) # Ví dụ tìm BOOK_173123...
+            match = re.search(r'(BOOK\w+)', content) # Ví dụ tìm BOOK_173123...
             if match:
                 found_code = match.group(1)
                 print(f" Đã Thanh Toán Thành Công! Đơn: {found_code} - Số tiền: {amount}")
@@ -2223,6 +2223,7 @@ def check_status(booking_code):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
