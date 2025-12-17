@@ -86,7 +86,7 @@ def send_email(to_email, subject, html_content):
     }
 
     data = {
-        "from": "Hotel Pinder <noreply@hotelpinder.com>",
+        "from": "Hotel Pinder <onboarding@resend.dev>",
         "to": [to_email],
         "subject": subject,
         "html": html_content
@@ -2223,5 +2223,6 @@ def check_status(booking_code):
 # === KHỞI CHẠY APP ===
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
