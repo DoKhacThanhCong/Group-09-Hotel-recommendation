@@ -2157,12 +2157,11 @@ def update_booking_csv_real(booking_code, amount):
     try:
         if os.path.exists(BOOKINGS_CSV):
             df = pd.read_csv(BOOKINGS_CSV, encoding='utf-8-sig')
-            # Tìm dòng có mã đơn
-            mask = df.apply(lambda row: row.astype(str).str.contains(str(booking_code)).any(), axis=1)
+            # Tìm dòng có mã đơn (Ví dụ: BOOK_12345)
+            mask = df.apply(lambda row: row.astype(str).str.contains(booking_code).any(), axis=1)
             
             if mask.any():
                 df.loc[mask, 'status'] = 'PAID'
-                df.loc[mask, 'payment_status'] = 'Success'
                 df.to_csv(BOOKINGS_CSV, index=False, encoding='utf-8-sig')
                 print(f"✅ Đã nhận {amount}đ. Đơn {booking_code} -> PAID")
                 return True
@@ -2170,104 +2169,55 @@ def update_booking_csv_real(booking_code, amount):
         print(f"❌ Lỗi ghi file: {e}")
     return False
 
-# 1. API WEBHOOK (SePay gọi vào đây)
+# 1. API WEBHOOK (Cái này quan trọng nhất!)
+# Đây là cái link anh sẽ dán vào SePay/Casso
 @app.route('/api/webhook/payment_notification', methods=['POST'])
 def webhook_payment():
     try:
         data = request.get_json()
-        print(f"📩 [WEBHOOK] Nhận dữ liệu: {data}")
+        print(f"📩 NHẬN TÍN HIỆU NGÂN HÀNG: {data}")
 
-        transactions = data.get('transactions', []) or data.get('data', [])
+        # Lấy danh sách giao dịch (SePay/Casso trả về mảng)
+        transactions = data.get('transactions', []) # SePay dùng 'transactions', Casso dùng 'data'
+        if not transactions:
+            transactions = data.get('data', [])
 
-        count_success = 0
         for trans in transactions:
+            # Lấy nội dung chuyển khoản (Ví dụ: "THANH TOAN BOOK123")
             content = trans.get('transaction_content', '') or trans.get('description', '')
             amount = trans.get('amount_in', 0) or trans.get('amount', 0)
-            
-            # --- REGEX BẮT MỌI TRƯỜNG HỢP ---
-            match = re.search(r'(BOOK[-_]?\w+|ORD[-_]?\w+|\b\d{8}\b)', content, re.IGNORECASE)
-            
+
+            # Tìm mã đơn hàng (Tìm chữ BOOK... trong nội dung)
+            match = re.search(r'(BOOK\w+)', content) # Ví dụ tìm BOOK_173123...
             if match:
-                raw_code = match.group(1)
-                # Chỉ giữ lại số (Ví dụ BOOK_123 -> 123)
-                clean_code = re.sub(r'\D', '', raw_code) 
-                if not clean_code: clean_code = raw_code
-
-                print(f"💰 Tìm thấy mã: {clean_code} - Tiền: {amount}")
+                found_code = match.group(1)
+                print(f" Đã Thanh Toán Thành Công! Đơn: {found_code} - Số tiền: {amount}")
                 
-                # 1. Cập nhật RAM (PAID chữ hoa)
-                payment_memory_db[clean_code] = 'PAID'
-                
-                # 2. Cập nhật CSV
-                update_booking_csv_real(clean_code, amount)
-                count_success += 1
+                # Cập nhật ngay lập tức
+                payment_memory_db[found_code] = 'PAID'
+                update_booking_csv_real(found_code, amount)
 
-        return jsonify({'success': True, 'updated': count_success})
+        return jsonify({'SUCCESS': True})
     except Exception as e:
-        print(f"❌ Webhook Error: {e}")
+        print(f"❌ Lỗi Webhook: {e}")
         return jsonify({'error': str(e)}), 500
-    
 
-# 2. API CHECK TRẠNG THÁI 
+# 2. API CHECK TRẠNG THÁI (Cho web khách hỏi liên tục)
 @app.route('/api/check_status')
-def check_status_api():
-    # Lấy mã từ URL: /api/check_status?code=123456
-    booking_code = request.args.get('code')
-    
-    if not booking_code:
-        return jsonify({'status': 'ERROR', 'message': 'Thiếu mã code'})
-    
-    booking_code = str(booking_code).strip()
-
-    # Check trong RAM trước
+def check_status(booking_code):
     status = payment_memory_db.get(booking_code, 'pending')
     
-    # Check trong CSV nếu RAM chưa có
+    # Nếu RAM chưa có, check kỹ trong CSV lần nữa cho chắc
     if status == 'pending' and os.path.exists(BOOKINGS_CSV):
         try:
             df = pd.read_csv(BOOKINGS_CSV, encoding='utf-8-sig')
-            # Fix lỗi so sánh chuỗi
-            df['booking_code'] = df['booking_code'].astype(str).str.strip()
-            mask = df['booking_code'] == booking_code
-            
-            if mask.any():
-                val = str(df.loc[mask, 'status'].values[0]).upper()
-                if val in ['PAID', 'SUCCESS', 'COMPLETED']:
-                    status = 'PAID'
-                    payment_memory_db[booking_code] = 'PAID'
+            mask = df.apply(lambda row: row.astype(str).str.contains(booking_code).any(), axis=1)
+            if mask.any() and df.loc[mask, 'status'].values[0] == 'PAID':
+                status = 'PAID'
+                payment_memory_db[booking_code] = 'PAID'
         except: pass
         
     return jsonify({'status': status})
-
-@app.route('/')
-def index():
-    # Load lại trang chủ như cũ
-    hotels_df = read_csv_safe(HOTELS_CSV)
-    if 'rooms_available' not in hotels_df.columns: hotels_df['rooms_available'] = 0
-    hotels_df['rooms_available'] = hotels_df['rooms_available'].astype(int)
-    if 'status' not in hotels_df.columns:
-        hotels_df['status'] = hotels_df['rooms_available'].apply(lambda x: 'còn' if x > 0 else 'hết')
-    cities = sorted(hotels_df['city'].dropna().unique())
-    return render_template('index.html', cities=cities)
-
-# Route render payment page
-@app.route("/payment/<code>")
-def payment_page(code):
-    try:
-        df = pd.read_csv(BOOKINGS_CSV, encoding="utf-8-sig")
-        df['booking_code'] = df['booking_code'].astype(str).str.strip()
-        result = df[df['booking_code'] == str(code)]
-        if result.empty: return "Mã không tồn tại", 404
-        info = result.iloc[0].to_dict()
-        return render_template("payment.html", info=info)
-    except: return "Lỗi", 500
-
-@app.route("/payment_confirm", methods=["POST"])
-def payment_confirm():
-    code = request.form.get("code", "").strip()
-    update_booking_csv_real(code, 0)
-    flash("Đã xác nhận thanh toán!", "success")
-    return redirect(url_for("index"))
 
 
 # === KHỞI CHẠY APP ===
